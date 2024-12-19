@@ -8,4 +8,9 @@ dependencies {
     api(libs.guava)
 
     api(libs.minestom)
+
+    api(libs.hollowcube.polar)
+
+
+    implementation("org.jctools:jctools-core:4.0.3")
 }
