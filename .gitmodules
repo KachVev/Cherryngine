@@ -1,0 +1,3 @@
+[submodule "lib-minestom"]
+	path = lib-minestom
+	url = https://github.com/SkolkovoLab/Minestom.git
