@@ -40,4 +40,7 @@ bin/
 .DS_Store
 /config.yml
 
+### Run Directory ###
 run/
+!**/src/main/**/run/
+!**/src/test/**/run/
