@@ -3,6 +3,7 @@ plugins {
 }
 
 dependencies {
+    api(project(":lib-jackson"))
     api(project(":lib-math"))
 
     api(libs.kotlinx.coroutines.core)

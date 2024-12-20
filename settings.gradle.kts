@@ -14,6 +14,7 @@ include(
 
     "impl-demo",
 
+    "lib-jackson",
     "lib-math",
 )
 
