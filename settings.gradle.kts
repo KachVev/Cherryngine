@@ -12,7 +12,9 @@ rootProject.name = "Cherryngine"
 include(
     "engine-core",
 
-    "impl-demo"
+    "impl-demo",
+
+    "lib-math",
 )
 
 includeBuild("lib-minestom") {

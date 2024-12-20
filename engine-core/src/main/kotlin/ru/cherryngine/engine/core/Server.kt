@@ -126,7 +126,7 @@ class Server(
 
             is ClientFinishConfigurationPacket -> {
                 val blockHolder = defaultWorldProvider.blockHolder
-                val position = defaultWorldProvider.spawnPos
+                val position = defaultWorldProvider.spawnPos.minestomPos(defaultWorldProvider.spawnView)
 
                 val packets: MutableList<ServerPacket.Play> = ArrayList()
 
