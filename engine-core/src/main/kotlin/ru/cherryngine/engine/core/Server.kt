@@ -24,7 +24,7 @@ import net.minestom.server.network.packet.server.login.LoginSuccessPacket
 import net.minestom.server.network.packet.server.play.*
 import net.minestom.server.network.player.GameProfile
 import net.minestom.server.registry.Registries
-import ru.cherryngine.engine.core.connection.Client
+import ru.cherryngine.engine.core.connection.ClientConnection
 import java.io.EOFException
 import java.io.IOException
 import java.net.InetSocketAddress
@@ -48,7 +48,7 @@ class Server(
     private val server: ServerSocketChannel = ServerSocketChannel.open(StandardProtocolFamily.INET)
     private var keepAliveId = 0
 
-    private val connections = Collections.newSetFromMap(WeakHashMap<Client, Boolean>())
+    private val connections = Collections.newSetFromMap(WeakHashMap<ClientConnection, Boolean>())
 
     val running get() = !stopped.get()
 
@@ -71,28 +71,28 @@ class Server(
             try {
                 val channel = server.accept()
                 println("Accepted connection from ${channel.remoteAddress}")
-                val client = Client(channel, registries)
-                connections += client
+                val clientConnection = ClientConnection(channel, registries)
+                connections += clientConnection
 
-                Thread.startVirtualThread { playerReadLoop(client) }
-                Thread.startVirtualThread { playerWriteLoop(client) }
+                Thread.startVirtualThread { playerReadLoop(clientConnection) }
+                Thread.startVirtualThread { playerWriteLoop(clientConnection) }
             } catch (e: IOException) {
                 throw RuntimeException(e)
             }
         }
     }
 
-    fun baseOnPacket(client: Client, packet: ClientPacket) {
+    fun baseOnPacket(clientConnection: ClientConnection, packet: ClientPacket) {
         when (packet) {
             is ClientLoginStartPacket -> {
-                if (TempConsts.COMPRESSION_THRESHOLD > 0) client.startCompression()
-                client.sendPacket(LoginSuccessPacket(GameProfile(packet.profileId, packet.username)))
+                if (TempConsts.COMPRESSION_THRESHOLD > 0) clientConnection.startCompression()
+                clientConnection.sendPacket(LoginSuccessPacket(GameProfile(packet.profileId, packet.username)))
             }
 
             is ClientLoginAcknowledgedPacket -> {
                 val excludeVanilla = true
 
-                client.sendPacket(SelectKnownPacksPacket(listOf(SelectKnownPacksPacket.MINECRAFT_CORE)))
+                clientConnection.sendPacket(SelectKnownPacksPacket(listOf(SelectKnownPacksPacket.MINECRAFT_CORE)))
 
                 val flags = listOf(
                     FeatureFlag.REDSTONE_EXPERIMENTS,
@@ -100,7 +100,7 @@ class Server(
                     FeatureFlag.TRADE_REBALANCE,
                     FeatureFlag.MINECART_IMPROVEMENTS
                 )
-                client.sendPacket(UpdateEnabledFeaturesPacket(flags.map(FeatureFlag::name)))
+                clientConnection.sendPacket(UpdateEnabledFeaturesPacket(flags.map(FeatureFlag::name)))
 
                 sequenceOf(
                     registries.chatType(),
@@ -116,12 +116,12 @@ class Server(
                     registries.jukeboxSong(),
                     registries.instrument(),
                 ).forEach { dynamicRegistry ->
-                    client.sendPacket(dynamicRegistry.registryDataPacket(registries, excludeVanilla))
+                    clientConnection.sendPacket(dynamicRegistry.registryDataPacket(registries, excludeVanilla))
                 }
 
-                client.sendPacket(defaultTagsPacket)
+                clientConnection.sendPacket(defaultTagsPacket)
 
-                client.sendPacket(FinishConfigurationPacket())
+                clientConnection.sendPacket(FinishConfigurationPacket())
             }
 
             is ClientFinishConfigurationPacket -> {
@@ -156,46 +156,46 @@ class Server(
 
                 packets += ChangeGameStatePacket(ChangeGameStatePacket.Reason.LEVEL_CHUNKS_LOAD_START, 0f)
 
-                client.sendPackets(packets)
+                clientConnection.sendPackets(packets)
             }
         }
     }
 
-    private fun playerReadLoop(client: Client) {
+    private fun playerReadLoop(clientConnection: ClientConnection) {
         while (running) {
             try {
                 // Чтение и обработка пакетов
-                client.read(packetParser)
+                clientConnection.read(packetParser)
             } catch (_: EOFException) {
-                client.disconnect()
+                clientConnection.disconnect()
                 break
             } catch (e: Throwable) {
                 val isExpected = e is SocketException && e.message == "Connection reset"
                 if (!isExpected) e.printStackTrace()
-                client.disconnect()
+                clientConnection.disconnect()
                 break
             }
         }
     }
 
-    private fun playerWriteLoop(client: Client) {
+    private fun playerWriteLoop(clientConnection: ClientConnection) {
         while (running) {
             try {
-                client.flushSync()
+                clientConnection.flushSync()
             } catch (_: EOFException) {
-                client.disconnect()
+                clientConnection.disconnect()
                 break
             } catch (e: Throwable) {
                 val isExpected = e is IOException && e.message == "Broken pipe"
                 if (!isExpected) e.printStackTrace()
-                client.disconnect()
+                clientConnection.disconnect()
                 break
             }
 
-            if (!client.online) {
+            if (!clientConnection.online) {
                 try {
-                    client.flushSync()
-                    client.channel.close()
+                    clientConnection.flushSync()
+                    clientConnection.channel.close()
                     break
                 } catch (_: IOException) {
                     // Отключение
@@ -213,7 +213,7 @@ class Server(
             }
         }
 
-        connections.forEach(Client::tickStart)
+        connections.forEach(ClientConnection::tickStart)
 
         connections.forEach { client ->
             client.packets.forEach { packet ->

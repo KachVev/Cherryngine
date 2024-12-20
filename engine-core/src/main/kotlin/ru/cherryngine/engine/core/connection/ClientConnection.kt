@@ -33,7 +33,7 @@ import java.util.concurrent.atomic.AtomicLong
 import java.util.zip.DataFormatException
 import javax.crypto.Cipher
 
-class Client(
+class ClientConnection(
     val channel: SocketChannel,
     registries: Registries,
 ) : CommandSender {
