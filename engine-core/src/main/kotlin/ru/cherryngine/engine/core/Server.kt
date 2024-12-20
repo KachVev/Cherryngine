@@ -38,7 +38,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 class Server(
     val registries: Registries,
     val tagManager: TagManager,
-    val engineConfig: EngineConfig,
+    val engineCoreConfig: EngineCoreConfig,
     val defaultWorldProvider: DefaultWorldProvider,
 ) {
     private val packetParser = PacketVanilla.CLIENT_PACKET_PARSER
@@ -54,7 +54,7 @@ class Server(
 
     @PostConstruct
     fun init() {
-        val address = InetSocketAddress(engineConfig.get().address, engineConfig.get().port)
+        val address = InetSocketAddress(engineCoreConfig.address, engineCoreConfig.port)
         server.bind(address)
         println("Server started on: $address")
         Thread.startVirtualThread { this.listenConnections() }
