@@ -71,7 +71,7 @@ class Server(
             try {
                 val channel = server.accept()
                 println("Accepted connection from ${channel.remoteAddress}")
-                val clientConnection = ClientConnection(channel, registries)
+                val clientConnection = ClientConnection(channel, registries, engineCoreConfig.compressionThreshold)
                 connections += clientConnection
 
                 Thread.startVirtualThread { playerReadLoop(clientConnection) }
@@ -85,7 +85,6 @@ class Server(
     fun baseOnPacket(clientConnection: ClientConnection, packet: ClientPacket) {
         when (packet) {
             is ClientLoginStartPacket -> {
-                if (TempConsts.COMPRESSION_THRESHOLD > 0) clientConnection.startCompression()
                 clientConnection.sendPacket(LoginSuccessPacket(GameProfile(packet.profileId, packet.username)))
             }
 

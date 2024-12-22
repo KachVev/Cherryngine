@@ -6,4 +6,5 @@ import io.micronaut.context.annotation.ConfigurationProperties
 data class EngineCoreConfig(
     val address: String = "0.0.0.0",
     val port: Int = 25565,
+    val compressionThreshold: Int = 256,
 )

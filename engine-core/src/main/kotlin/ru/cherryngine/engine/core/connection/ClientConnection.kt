@@ -11,17 +11,12 @@ import net.minestom.server.network.packet.PacketVanilla
 import net.minestom.server.network.packet.PacketWriting
 import net.minestom.server.network.packet.client.ClientPacket
 import net.minestom.server.network.packet.client.common.ClientPingRequestPacket
-import net.minestom.server.network.packet.server.BufferedPacket
-import net.minestom.server.network.packet.server.CachedPacket
-import net.minestom.server.network.packet.server.FramedPacket
-import net.minestom.server.network.packet.server.LazyPacket
-import net.minestom.server.network.packet.server.SendablePacket
-import net.minestom.server.network.packet.server.ServerPacket
+import net.minestom.server.network.packet.client.login.ClientLoginStartPacket
+import net.minestom.server.network.packet.server.*
 import net.minestom.server.network.packet.server.common.PingResponsePacket
 import net.minestom.server.network.packet.server.login.SetCompressionPacket
 import net.minestom.server.network.packet.server.play.SystemChatPacket
 import net.minestom.server.registry.Registries
-import net.minestom.server.utils.validate.Check
 import org.jctools.queues.MpscUnboundedXaddArrayQueue
 import ru.cherryngine.engine.core.TempConsts
 import ru.cherryngine.engine.core.commands.CommandSender
@@ -29,13 +24,13 @@ import java.io.EOFException
 import java.io.IOException
 import java.nio.channels.SocketChannel
 import java.util.concurrent.ConcurrentLinkedQueue
-import java.util.concurrent.atomic.AtomicLong
 import java.util.zip.DataFormatException
 import javax.crypto.Cipher
 
 class ClientConnection(
     val channel: SocketChannel,
     registries: Registries,
+    val compressionThreshold: Int,
 ) : CommandSender {
     data class EncryptionContext(
         val encrypt: Cipher,
@@ -56,16 +51,13 @@ class ClientConnection(
     private val readBuffer = NetworkBuffer.resizableBuffer(TempConsts.POOLED_BUFFER_SIZE, registries)
     private val packetQueue = MpscUnboundedXaddArrayQueue<SendablePacket>(1024)
 
-    private val sentPacketCounter = AtomicLong()
-
     @Volatile
-    private var compressionStart: Long = Long.MAX_VALUE
+    private var compressionStarted = false
 
     fun disconnect() {
         online = false
     }
 
-    @Throws(IOException::class)
     fun read(packetParser: PacketParser<ClientPacket>) {
         val writeIndex = readBuffer.writeIndex()
         val length = readBuffer.readChannel(channel)
@@ -77,10 +69,6 @@ class ClientConnection(
         processPackets(readBuffer, packetParser)
     }
 
-    private fun compression(): Boolean {
-        return compressionStart != Long.MAX_VALUE
-    }
-
     private fun processPackets(readBuffer: NetworkBuffer, packetParser: PacketParser<ClientPacket>) {
         val startingState = connectionState
         val result: PacketReading.Result<ClientPacket> = try {
@@ -89,7 +77,7 @@ class ClientConnection(
                 packetParser,
                 startingState,
                 PacketVanilla::nextClientState,
-                compression()
+                compressionStarted
             )
         } catch (e: DataFormatException) {
             e.printStackTrace()
@@ -111,6 +99,11 @@ class ClientConnection(
                     when (packet) {
                         is ClientPingRequestPacket -> {
                             sendPacket(PingResponsePacket(packet.number))
+                        }
+
+                        is ClientLoginStartPacket -> {
+                            if (compressionThreshold > 0) startCompression()
+                            incomingPlayPackets.add(packet)
                         }
 
                         else -> {
@@ -141,20 +134,18 @@ class ClientConnection(
      * @throws IllegalStateException if encryption is already enabled for this connection
      */
     fun startCompression() {
-        Check.stateCondition(compression(), "Compression is already enabled!")
-        compressionStart = sentPacketCounter.get()
-        val threshold = TempConsts.COMPRESSION_THRESHOLD
-        Check.stateCondition(threshold == 0, "Compression cannot be enabled because the threshold is equal to 0")
-        sendPacket(SetCompressionPacket(threshold))
+        require(!compressionStarted) { "Compression is already enabled!" }
+        require(compressionThreshold != 0) { "Compression cannot be enabled because the threshold is equal to 0" }
+        sendPacket(SetCompressionPacket(compressionThreshold))
     }
 
     fun sendPacket(packet: SendablePacket) {
         packetQueue.relaxedOffer(packet)
     }
 
-    private fun writeSendable(buffer: NetworkBuffer, sendable: SendablePacket, compressed: Boolean): Boolean {
+    private fun writeSendable(buffer: NetworkBuffer, sendable: SendablePacket): Boolean {
         val start = buffer.writeIndex()
-        val result = writePacketSync(buffer, sendable, compressed)
+        val result = writePacketSync(buffer, sendable)
         if (!result) return false
         val length = buffer.writeIndex() - start
         encryptionContext?.let {
@@ -165,11 +156,11 @@ class ClientConnection(
         return true
     }
 
-    private fun writePacketSync(buffer: NetworkBuffer, packet: SendablePacket, compressed: Boolean): Boolean {
+    private fun writePacketSync(buffer: NetworkBuffer, packet: SendablePacket): Boolean {
         val state = connectionState
         // Write packet
         val start = buffer.writeIndex()
-        val compressionThreshold = if (compressed) TempConsts.COMPRESSION_THRESHOLD else 0
+        val compressionThreshold = if (compressionStarted) compressionThreshold else 0
         try {
             when (packet) {
                 is ServerPacket -> {
@@ -202,8 +193,6 @@ class ClientConnection(
                     val length = packet.length()
                     return writeBuffer(buffer, rawBuffer, index, length)
                 }
-
-                else -> return false
             }
         } catch (_: IndexOutOfBoundsException) {
             buffer.writeIndex(start)
@@ -251,9 +240,8 @@ class ClientConnection(
         val buffer = PacketVanilla.PACKET_POOL.get()
         // Write to buffer
         PacketWriting.writeQueue(buffer, packetQueue, 1) { b, packet ->
-            val compressed = sentPacketCounter.get() > compressionStart
-            val success = writeSendable(b, packet, compressed)
-            if (success) sentPacketCounter.getAndIncrement()
+            val success = writeSendable(b, packet)
+            if (success && packet is SetCompressionPacket) compressionStarted = true
             success
         }
         // Write to channel
