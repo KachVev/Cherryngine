@@ -3,29 +3,12 @@ package ru.cherryngine.engine.core.server
 import jakarta.annotation.PostConstruct
 import jakarta.annotation.PreDestroy
 import jakarta.inject.Singleton
-import net.minestom.server.FeatureFlag
-import net.minestom.server.coordinate.ChunkRange
-import net.minestom.server.coordinate.Vec
-import net.minestom.server.entity.GameMode
-import net.minestom.server.entity.RelativeFlags
-import net.minestom.server.gamedata.tags.TagManager
 import net.minestom.server.network.ConnectionState
 import net.minestom.server.network.packet.PacketVanilla
-import net.minestom.server.network.packet.client.ClientPacket
-import net.minestom.server.network.packet.client.configuration.ClientFinishConfigurationPacket
-import net.minestom.server.network.packet.client.login.ClientLoginAcknowledgedPacket
-import net.minestom.server.network.packet.client.login.ClientLoginStartPacket
-import net.minestom.server.network.packet.server.CachedPacket
-import net.minestom.server.network.packet.server.ServerPacket
 import net.minestom.server.network.packet.server.common.KeepAlivePacket
-import net.minestom.server.network.packet.server.configuration.FinishConfigurationPacket
-import net.minestom.server.network.packet.server.configuration.SelectKnownPacksPacket
-import net.minestom.server.network.packet.server.configuration.UpdateEnabledFeaturesPacket
-import net.minestom.server.network.packet.server.login.LoginSuccessPacket
-import net.minestom.server.network.packet.server.play.*
-import net.minestom.server.network.player.GameProfile
 import net.minestom.server.registry.Registries
-import ru.cherryngine.engine.core.*
+import org.slf4j.Logger
+import ru.cherryngine.engine.core.EngineCoreConfig
 import java.io.EOFException
 import java.io.IOException
 import java.net.InetSocketAddress
@@ -39,7 +22,8 @@ import java.util.concurrent.atomic.AtomicBoolean
 class Server(
     val registries: Registries,
     val engineCoreConfig: EngineCoreConfig,
-    val clientPacketListener: ClientPacketListener,
+    val clientPacketListeners: List<ClientPacketListener>,
+    val logger: Logger,
 ) {
     private val packetParser = PacketVanilla.CLIENT_PACKET_PARSER
 
@@ -54,8 +38,8 @@ class Server(
     fun init() {
         val address = InetSocketAddress(engineCoreConfig.address, engineCoreConfig.port)
         server.bind(address)
-        println("Server started on: $address")
-        Thread.startVirtualThread { this.listenConnections() }
+        Thread(::listenConnections, "ConnectionListenerThread").start()
+        logger.info("Server started on: $address")
     }
 
     @PreDestroy
@@ -67,12 +51,12 @@ class Server(
         while (running) {
             try {
                 val channel = server.accept()
-                println("Accepted connection from ${channel.remoteAddress}")
+                logger.info("Accepted connection from ${channel.remoteAddress}")
                 val clientConnection = ClientConnection(
                     channel,
                     registries,
                     engineCoreConfig.compressionThreshold,
-                    clientPacketListener
+                    clientPacketListeners
                 )
                 connections += clientConnection
 
@@ -80,7 +64,7 @@ class Server(
                 Thread.startVirtualThread { playerWriteLoop(clientConnection) }
                 Thread.startVirtualThread { playerKeepAliveLoop(clientConnection) }
             } catch (e: IOException) {
-                throw RuntimeException(e)
+                logger.error("Failed to accept connection", e)
             }
         }
     }
@@ -95,7 +79,7 @@ class Server(
                 break
             } catch (e: Throwable) {
                 val isExpected = e is SocketException && e.message == "Connection reset"
-                if (!isExpected) e.printStackTrace()
+                if (!isExpected) logger.error("Failed to read packets", e)
                 clientConnection.disconnect()
                 break
             }
@@ -111,7 +95,7 @@ class Server(
                 break
             } catch (e: Throwable) {
                 val isExpected = e is IOException && e.message == "Broken pipe"
-                if (!isExpected) e.printStackTrace()
+                if (!isExpected) logger.error("Failed to flush packets", e)
                 clientConnection.disconnect()
                 break
             }

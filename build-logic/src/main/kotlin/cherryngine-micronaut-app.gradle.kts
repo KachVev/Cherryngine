@@ -7,10 +7,6 @@ application {
     mainClass = "ru.cherryngine.engine.core.Main"
 }
 
-micronaut {
-    runtime("netty")
-}
-
 tasks {
     distZip {
         enabled = false

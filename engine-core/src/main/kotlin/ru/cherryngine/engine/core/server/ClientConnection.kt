@@ -19,12 +19,13 @@ import java.io.IOException
 import java.nio.channels.SocketChannel
 import java.util.zip.DataFormatException
 import javax.crypto.Cipher
+import kotlin.Throws
 
 class ClientConnection(
     val channel: SocketChannel,
     registries: Registries,
     val compressionThreshold: Int,
-    val clientPacketListener: ClientPacketListener,
+    val clientPacketListeners: List<ClientPacketListener>,
 ) {
     companion object {
         private const val POOLED_BUFFER_SIZE = 16_383L
@@ -103,7 +104,7 @@ class ClientConnection(
                             if (compressionThreshold > 0) startCompression()
                         }
                     }
-                    clientPacketListener.onPacketReceived(this, packet)
+                    clientPacketListeners.forEach { it.onPacketReceived(this, packet) }
                 }
                 readBuffer.compact()
             }
