@@ -17,7 +17,7 @@ import java.util.*
 /**
  * Basic structure to hold blocks and create chunk data packets.
  */
-class BlockHolder(
+open class BlockHolder(
     val dimensionType: DimensionType,
     val chunkSupplier: ChunkSupplier,
 ) : Block.Getter, Block.Setter {
