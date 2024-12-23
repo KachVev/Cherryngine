@@ -1,8 +1,5 @@
-package ru.cherryngine.engine.core.connection
+package ru.cherryngine.engine.core.server
 
-import net.kyori.adventure.audience.MessageType
-import net.kyori.adventure.identity.Identity
-import net.kyori.adventure.text.Component
 import net.minestom.server.network.ConnectionState
 import net.minestom.server.network.NetworkBuffer
 import net.minestom.server.network.packet.PacketParser
@@ -15,15 +12,11 @@ import net.minestom.server.network.packet.client.login.ClientLoginStartPacket
 import net.minestom.server.network.packet.server.*
 import net.minestom.server.network.packet.server.common.PingResponsePacket
 import net.minestom.server.network.packet.server.login.SetCompressionPacket
-import net.minestom.server.network.packet.server.play.SystemChatPacket
 import net.minestom.server.registry.Registries
 import org.jctools.queues.MpscUnboundedXaddArrayQueue
-import ru.cherryngine.engine.core.TempConsts
-import ru.cherryngine.engine.core.commands.CommandSender
 import java.io.EOFException
 import java.io.IOException
 import java.nio.channels.SocketChannel
-import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.zip.DataFormatException
 import javax.crypto.Cipher
 
@@ -31,7 +24,12 @@ class ClientConnection(
     val channel: SocketChannel,
     registries: Registries,
     val compressionThreshold: Int,
-) : CommandSender {
+    val clientPacketListener: ClientPacketListener,
+) {
+    companion object {
+        private const val POOLED_BUFFER_SIZE = 16_383L
+    }
+
     data class EncryptionContext(
         val encrypt: Cipher,
         val decrypt: Cipher,
@@ -48,7 +46,7 @@ class ClientConnection(
     var online: Boolean = true
         private set
 
-    private val readBuffer = NetworkBuffer.resizableBuffer(TempConsts.POOLED_BUFFER_SIZE, registries)
+    private val readBuffer = NetworkBuffer.resizableBuffer(POOLED_BUFFER_SIZE, registries)
     private val packetQueue = MpscUnboundedXaddArrayQueue<SendablePacket>(1024)
 
     @Volatile
@@ -103,13 +101,9 @@ class ClientConnection(
 
                         is ClientLoginStartPacket -> {
                             if (compressionThreshold > 0) startCompression()
-                            incomingPlayPackets.add(packet)
-                        }
-
-                        else -> {
-                            incomingPlayPackets.add(packet)
                         }
                     }
+                    clientPacketListener.onPacketReceived(this, packet)
                 }
                 readBuffer.compact()
             }
@@ -226,16 +220,6 @@ class ClientConnection(
             }
         }
         // Consume queued packets
-        val packetQueue = packetQueue
-        if (packetQueue.isEmpty()) {
-            try {
-                // Can probably be improved by waking up at the end of the tick
-                // But this works well enough and without additional state.
-                Thread.sleep(1000L / TempConsts.SERVER_TICKS_PER_SECOND / 2)
-            } catch (e: InterruptedException) {
-                throw RuntimeException(e)
-            }
-        }
         if (!channel.isConnected) throw EOFException("Channel is closed")
         val buffer = PacketVanilla.PACKET_POOL.get()
         // Write to buffer
@@ -254,15 +238,6 @@ class ClientConnection(
         }
     }
 
-    var packets: List<ClientPacket> = emptyList()
-        private set
-    private val incomingPlayPackets: ConcurrentLinkedQueue<ClientPacket> = ConcurrentLinkedQueue()
-
-    fun tickStart() {
-        packets = incomingPlayPackets.toList()
-        incomingPlayPackets.clear()
-    }
-
     fun sendPackets(packets: Collection<SendablePacket>) {
         packets.forEach { sendPacket(it) }
     }
@@ -271,8 +246,7 @@ class ClientConnection(
         sendPackets(packets.toList())
     }
 
-    @Suppress("UnstableApiUsage", "DEPRECATION", "OVERRIDE_DEPRECATION")
-    override fun sendMessage(source: Identity, message: Component, type: MessageType) {
-        sendPacket(SystemChatPacket(message, false))
+    override fun toString(): String {
+        return "ClientConnection(channel=$channel, connectionState=$connectionState, online=$online)"
     }
 }

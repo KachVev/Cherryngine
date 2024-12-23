@@ -1,6 +1,7 @@
-package ru.cherryngine.engine.core
+package ru.cherryngine.engine.core.server
 
 import jakarta.annotation.PostConstruct
+import jakarta.annotation.PreDestroy
 import jakarta.inject.Singleton
 import net.minestom.server.FeatureFlag
 import net.minestom.server.coordinate.ChunkRange
@@ -24,7 +25,7 @@ import net.minestom.server.network.packet.server.login.LoginSuccessPacket
 import net.minestom.server.network.packet.server.play.*
 import net.minestom.server.network.player.GameProfile
 import net.minestom.server.registry.Registries
-import ru.cherryngine.engine.core.connection.ClientConnection
+import ru.cherryngine.engine.core.*
 import java.io.EOFException
 import java.io.IOException
 import java.net.InetSocketAddress
@@ -37,16 +38,13 @@ import java.util.concurrent.atomic.AtomicBoolean
 @Singleton
 class Server(
     val registries: Registries,
-    val tagManager: TagManager,
     val engineCoreConfig: EngineCoreConfig,
-    val defaultWorldProvider: DefaultWorldProvider,
+    val clientPacketListener: ClientPacketListener,
 ) {
     private val packetParser = PacketVanilla.CLIENT_PACKET_PARSER
-    val defaultTagsPacket: CachedPacket by lazy { CachedPacket(tagManager.packet(registries)) }
 
     private val stopped = AtomicBoolean(false)
     private val server: ServerSocketChannel = ServerSocketChannel.open(StandardProtocolFamily.INET)
-    private var keepAliveId = 0
 
     private val connections = Collections.newSetFromMap(WeakHashMap<ClientConnection, Boolean>())
 
@@ -58,12 +56,11 @@ class Server(
         server.bind(address)
         println("Server started on: $address")
         Thread.startVirtualThread { this.listenConnections() }
+    }
 
-        Thread({
-            while (running) tick()
-            server.close()
-            println("Server stopped")
-        }, this::class.simpleName).start()
+    @PreDestroy
+    fun stop() {
+        stopped.set(true)
     }
 
     private fun listenConnections() {
@@ -71,91 +68,19 @@ class Server(
             try {
                 val channel = server.accept()
                 println("Accepted connection from ${channel.remoteAddress}")
-                val clientConnection = ClientConnection(channel, registries, engineCoreConfig.compressionThreshold)
+                val clientConnection = ClientConnection(
+                    channel,
+                    registries,
+                    engineCoreConfig.compressionThreshold,
+                    clientPacketListener
+                )
                 connections += clientConnection
 
                 Thread.startVirtualThread { playerReadLoop(clientConnection) }
                 Thread.startVirtualThread { playerWriteLoop(clientConnection) }
+                Thread.startVirtualThread { playerKeepAliveLoop(clientConnection) }
             } catch (e: IOException) {
                 throw RuntimeException(e)
-            }
-        }
-    }
-
-    fun baseOnPacket(clientConnection: ClientConnection, packet: ClientPacket) {
-        when (packet) {
-            is ClientLoginStartPacket -> {
-                clientConnection.sendPacket(LoginSuccessPacket(GameProfile(packet.profileId, packet.username)))
-            }
-
-            is ClientLoginAcknowledgedPacket -> {
-                val excludeVanilla = true
-
-                clientConnection.sendPacket(SelectKnownPacksPacket(listOf(SelectKnownPacksPacket.MINECRAFT_CORE)))
-
-                val flags = listOf(
-                    FeatureFlag.REDSTONE_EXPERIMENTS,
-                    FeatureFlag.VANILLA,
-                    FeatureFlag.TRADE_REBALANCE,
-                    FeatureFlag.MINECART_IMPROVEMENTS
-                )
-                clientConnection.sendPacket(UpdateEnabledFeaturesPacket(flags.map(FeatureFlag::name)))
-
-                sequenceOf(
-                    registries.chatType(),
-                    registries.dimensionType(),
-                    registries.biome(),
-                    registries.damageType(),
-                    registries.trimMaterial(),
-                    registries.trimPattern(),
-                    registries.bannerPattern(),
-                    registries.wolfVariant(),
-                    registries.enchantment(),
-                    registries.paintingVariant(),
-                    registries.jukeboxSong(),
-                    registries.instrument(),
-                ).forEach { dynamicRegistry ->
-                    clientConnection.sendPacket(dynamicRegistry.registryDataPacket(registries, excludeVanilla))
-                }
-
-                clientConnection.sendPacket(defaultTagsPacket)
-
-                clientConnection.sendPacket(FinishConfigurationPacket())
-            }
-
-            is ClientFinishConfigurationPacket -> {
-                val blockHolder = defaultWorldProvider.blockHolder
-                val position = defaultWorldProvider.spawnPos.minestomPos(defaultWorldProvider.spawnView)
-
-                val packets: MutableList<ServerPacket.Play> = ArrayList()
-
-                val dimensionTypeId = registries.dimensionType().getId(blockHolder.dimensionType)!!
-
-                packets += JoinGamePacket(
-                    -1, false, listOf(), 0,
-                    TempConsts.VIEW_DISTANCE, TempConsts.VIEW_DISTANCE,
-                    false, true, false,
-                    dimensionTypeId, "world",
-                    0, GameMode.SURVIVAL, null, false, true,
-                    null, 0, 63, false
-                )
-
-                packets += SpawnPositionPacket(position, 0f)
-                packets += PlayerPositionAndLookPacket(0, position, Vec.ZERO, 0f, 0f, RelativeFlags.NONE)
-
-                packets += UpdateViewDistancePacket(TempConsts.VIEW_DISTANCE)
-                packets += UpdateViewPositionPacket(position.chunkX(), position.chunkZ())
-                ChunkRange.chunksInRange(
-                    position.chunkX(),
-                    position.chunkZ(),
-                    TempConsts.VIEW_DISTANCE
-                ) { x: Int, z: Int ->
-                    blockHolder.generatePacket(x, z)?.let { packets += it }
-                }
-
-                packets += ChangeGameStatePacket(ChangeGameStatePacket.Reason.LEVEL_CHUNKS_LOAD_START, 0f)
-
-                clientConnection.sendPackets(packets)
             }
         }
     }
@@ -204,22 +129,20 @@ class Server(
         }
     }
 
-    private fun tick() {
-        val sendKeepAlive = keepAliveId++ % (20 * 20) == 0
-        if (sendKeepAlive) connections.forEach {
-            if (it.online && (it.connectionState == ConnectionState.CONFIGURATION || it.connectionState == ConnectionState.PLAY)) {
-                it.sendPacket(KeepAlivePacket(keepAliveId.toLong()))
+    private fun playerKeepAliveLoop(clientConnection: ClientConnection) {
+        while (running) {
+            if (!clientConnection.online) break
+            // KeepAlive нужен только в состоянии CONFIGURATION и PLAY
+            // Если клиент находится в STATUS, то можно обрывать цикл
+            when (clientConnection.connectionState) {
+                ConnectionState.HANDSHAKE, ConnectionState.LOGIN -> Unit
+                ConnectionState.STATUS -> break
+                ConnectionState.CONFIGURATION, ConnectionState.PLAY -> {
+                    clientConnection.sendPacket(KeepAlivePacket(System.currentTimeMillis()))
+                }
             }
+
+            Thread.sleep(20 * 1000)
         }
-
-        connections.forEach(ClientConnection::tickStart)
-
-        connections.forEach { client ->
-            client.packets.forEach { packet ->
-                baseOnPacket(client, packet)
-            }
-        }
-
-        Thread.sleep(50) // типа 20 тпс
     }
 }

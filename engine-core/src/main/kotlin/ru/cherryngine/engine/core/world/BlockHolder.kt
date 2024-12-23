@@ -36,9 +36,9 @@ class BlockHolder(
         val chunk = getChunk(chunkX, chunkZ) ?: return null
         val data = NetworkBuffer.makeArray { networkBuffer ->
             for (section: Section in chunk.sections) {
-                networkBuffer.write(NetworkBuffer.SHORT, section.blockPalette().count().toShort());
-                networkBuffer.write(Palette.BLOCK_SERIALIZER, section.blockPalette());
-                networkBuffer.write(Palette.BIOME_SERIALIZER, section.biomePalette());
+                networkBuffer.write(NetworkBuffer.SHORT, section.blockPalette().count().toShort())
+                networkBuffer.write(Palette.BLOCK_SERIALIZER, section.blockPalette())
+                networkBuffer.write(Palette.BIOME_SERIALIZER, section.biomePalette())
             }
         }
         return ChunkDataPacket(
