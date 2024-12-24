@@ -23,7 +23,9 @@ import ru.cherryngine.engine.core.server.ClientPacketListener
 import ru.cherryngine.engine.scenes.SceneManager
 import ru.cherryngine.engine.scenes.event.EventBus
 import ru.cherryngine.engine.scenes.event.impl.ClientPacketEvent
-import ru.cherryngine.engine.scenes.modules.ClientModule
+import ru.cherryngine.engine.scenes.modules.client.ClientModule
+import ru.cherryngine.engine.scenes.modules.client.Controller
+import ru.cherryngine.engine.scenes.modules.client.FirstPersonController
 
 @Singleton
 class ClientPacketListenerImpl(
@@ -107,7 +109,11 @@ class ClientPacketListenerImpl(
         clientConnection: ClientConnection,
         packet: ClientFinishConfigurationPacket,
     ) {
-        sceneManager.masterScene.createGameObject().getOrCreateModule(ClientModule::class, clientConnection)
+        sceneManager.masterScene.createGameObject().apply {
+            val clientModule = getOrCreateModule(ClientModule::class, clientConnection)
+            getOrCreateModule(FirstPersonController::class, clientModule)
+            getOrCreateModule(DebugRenderer::class)
+        }
     }
 
     override fun onPacketReceived(

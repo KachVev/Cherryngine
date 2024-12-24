@@ -23,7 +23,7 @@ class GameObject(
 
     fun <T : Module> getOrCreateModule(clazz: KClass<T>, vararg args: Any): Module {
         return modules.computeIfAbsent(clazz) {
-            applicationContext.createBean(clazz.java, this, *args).apply { enable() }
+            applicationContext.createBean(clazz.java, this, *args).apply(Module::enable)
         }
     }
 

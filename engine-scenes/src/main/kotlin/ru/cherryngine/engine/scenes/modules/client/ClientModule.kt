@@ -1,4 +1,4 @@
-package ru.cherryngine.engine.scenes.modules
+package ru.cherryngine.engine.scenes.modules.client
 
 import io.micronaut.context.annotation.Parameter
 import io.micronaut.context.annotation.Prototype
@@ -12,7 +12,6 @@ import ru.cherryngine.engine.core.server.ClientConnection
 import ru.cherryngine.engine.scenes.GameObject
 import ru.cherryngine.engine.scenes.Module
 import ru.cherryngine.engine.scenes.event.EventBus
-import ru.cherryngine.engine.scenes.event.impl.ClientLoadedEvent
 import ru.cherryngine.engine.scenes.event.impl.ClientPacketEvent
 import ru.cherryngine.lib.math.Vec3D
 
@@ -24,14 +23,18 @@ class ClientModule(
 
     val viewDistance = 8
 
+    val onPacket: (ClientPacketEvent) -> Unit = entry@ {
+        if (it.clientConnection != this.connection) return@entry
+        bus.post(it)
+    }
+
     override fun enable() {
-
-        EventBus.GLOBAL.subscribe(ClientPacketEvent::class.java) {
-            if (it.clientConnection != this.connection) return@subscribe
-            bus.post(it)
-        }
-
+        EventBus.GLOBAL.subscribe(ClientPacketEvent::class.java, onPacket)
         spawn()
+    }
+
+    override fun destroy() {
+        EventBus.GLOBAL.unsubscribe(ClientPacketEvent::class.java, onPacket)
     }
 
     private fun spawn() {
@@ -62,7 +65,7 @@ class ClientModule(
         bus.post(ClientLoadedEvent(this))
     }
 
-    override fun destroy() {
-
-    }
+    data class ClientLoadedEvent(
+        val clientModule: ClientModule
+    )
 }
