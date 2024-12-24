@@ -1,11 +1,14 @@
-package ru.cherryngine.impl.demo
+package ru.cherryngine.engine.scenes
 
-import ru.cherryngine.impl.demo.event.EventBus
-import ru.cherryngine.impl.demo.event.impl.SceneTickEvent
-import java.util.HashMap
-import java.util.UUID
+import io.micronaut.context.ApplicationContext
+import ru.cherryngine.engine.scenes.event.EventBus
+import ru.cherryngine.engine.scenes.event.impl.SceneTickEvent
+import java.util.*
 
-class Scene(val data: Data) {
+class Scene(
+    private val applicationContext: ApplicationContext,
+    val data: Data
+) {
     val id: UUID = UUID.randomUUID()
 
     val gameObjects = HashMap<UUID, GameObject>()
@@ -48,8 +51,8 @@ class Scene(val data: Data) {
         tick++
     }
 
-    fun createGameObject(vararg modules: Module) : GameObject {
-        return GameObject(this, *modules).also {
+    fun createGameObject() : GameObject {
+        return GameObject(applicationContext, this).also {
             gameObjects[it.id] = it
         }
     }

@@ -8,7 +8,6 @@ import net.minestom.server.network.packet.client.ClientPacket
 import net.minestom.server.network.packet.client.configuration.ClientFinishConfigurationPacket
 import net.minestom.server.network.packet.client.login.ClientLoginAcknowledgedPacket
 import net.minestom.server.network.packet.client.login.ClientLoginStartPacket
-import net.minestom.server.network.packet.client.play.ClientTickEndPacket
 import net.minestom.server.network.packet.client.status.StatusRequestPacket
 import net.minestom.server.network.packet.server.CachedPacket
 import net.minestom.server.network.packet.server.configuration.FinishConfigurationPacket
@@ -21,9 +20,10 @@ import net.minestom.server.registry.Registries
 import org.intellij.lang.annotations.Language
 import ru.cherryngine.engine.core.server.ClientConnection
 import ru.cherryngine.engine.core.server.ClientPacketListener
-import ru.cherryngine.impl.demo.event.EventBus
-import ru.cherryngine.impl.demo.event.impl.ClientPacketEvent
-import ru.cherryngine.impl.demo.modules.ClientModule
+import ru.cherryngine.engine.scenes.SceneManager
+import ru.cherryngine.engine.scenes.event.EventBus
+import ru.cherryngine.engine.scenes.event.impl.ClientPacketEvent
+import ru.cherryngine.engine.scenes.modules.ClientModule
 
 @Singleton
 class ClientPacketListenerImpl(
@@ -107,8 +107,7 @@ class ClientPacketListenerImpl(
         clientConnection: ClientConnection,
         packet: ClientFinishConfigurationPacket,
     ) {
-
-        sceneManager.masterScene?.createGameObject()?.addModule(ClientModule(clientConnection))
+        sceneManager.masterScene.createGameObject().getOrCreateModule(ClientModule::class, clientConnection)
     }
 
     override fun onPacketReceived(

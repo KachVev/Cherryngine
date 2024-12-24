@@ -1,5 +1,6 @@
-package ru.cherryngine.impl.demo
+package ru.cherryngine.engine.scenes
 
+import io.micronaut.context.ApplicationContext
 import jakarta.annotation.PostConstruct
 import jakarta.annotation.PreDestroy
 import jakarta.inject.Singleton
@@ -7,26 +8,27 @@ import net.minestom.server.registry.Registries
 import net.minestom.server.world.DimensionType
 import ru.cherryngine.engine.core.world.BlockHolder
 import ru.cherryngine.engine.core.world.PolarChunkSupplier
-import ru.cherryngine.impl.demo.modules.BlockHolderModule
-import java.util.UUID
+import ru.cherryngine.engine.scenes.modules.BlockHolderModule
+import java.util.*
 
 @Singleton
-class SceneManager (
+class SceneManager(
+    private val applicationContext: ApplicationContext,
     private val registries: Registries,
 ) {
     val scenes: MutableMap<UUID, Scene> = HashMap()
-    var masterScene: Scene? = null
+    lateinit var masterScene: Scene
 
     @PostConstruct
     fun init() {
         masterScene = createScene(data = Scene.Data(20))
 
-        val blockHolderModule = BlockHolderModule(BlockHolder(
+        val blockHolder = BlockHolder(
             registries.dimensionType().get(DimensionType.OVERWORLD)!!,
             PolarChunkSupplier(javaClass.getResource("/world.polar")!!.readBytes(), registries)
-        ))
+        )
 
-        masterScene!!.createGameObject().addModule(blockHolderModule)
+        masterScene.createGameObject().getOrCreateModule(BlockHolderModule::class, blockHolder)
     }
 
     @PreDestroy
@@ -39,8 +41,8 @@ class SceneManager (
         scenes.remove(id)?.stop()
     }
 
-    fun createScene(data: Scene.Data) : Scene {
-        return Scene(data).also {
+    fun createScene(data: Scene.Data): Scene {
+        return Scene(applicationContext, data).also {
             scenes[it.id] = it
             it.start()
         }

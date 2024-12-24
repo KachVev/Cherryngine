@@ -1,4 +1,4 @@
-package ru.cherryngine.impl.demo.event
+package ru.cherryngine.engine.scenes.event
 
 class EventBus {
 

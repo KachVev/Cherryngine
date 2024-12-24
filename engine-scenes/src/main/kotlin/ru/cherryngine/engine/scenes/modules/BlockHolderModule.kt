@@ -1,28 +1,34 @@
-package ru.cherryngine.impl.demo.modules
+package ru.cherryngine.engine.scenes.modules
 
+import io.micronaut.context.annotation.Parameter
+import io.micronaut.context.annotation.Prototype
 import net.minestom.server.coordinate.ChunkRange
 import ru.cherryngine.engine.core.minestomPos
 import ru.cherryngine.engine.core.world.BlockHolder
-import ru.cherryngine.impl.demo.GameObject
-import ru.cherryngine.impl.demo.Module
-import ru.cherryngine.impl.demo.event.impl.ClientLoadedEvent
+import ru.cherryngine.engine.scenes.GameObject
+import ru.cherryngine.engine.scenes.Module
+import ru.cherryngine.engine.scenes.event.impl.ClientLoadedEvent
 
-class BlockHolderModule(val blockHolder: BlockHolder, gameObject: GameObject? = null) : Module(gameObject) {
+@Prototype
+class BlockHolderModule(
+    @Parameter override val gameObject: GameObject,
+    @Parameter val blockHolder: BlockHolder,
+) : Module {
 
     val load: (ClientLoadedEvent) -> Unit = {
         show(it.clientModule)
     }
 
     override fun enable() {
-        gameObject!!.scene.bus.subscribe(ClientLoadedEvent::class.java, load)
+        gameObject.scene.bus.subscribe(ClientLoadedEvent::class.java, load)
     }
 
     override fun destroy() {
-        gameObject!!.scene.bus.unsubscribe(ClientLoadedEvent::class.java, load)
+        gameObject.scene.bus.unsubscribe(ClientLoadedEvent::class.java, load)
     }
 
     fun show(client: ClientModule) {
-        client.gameObject!!.transform.position.minestomPos().let { pos ->
+        client.gameObject.transform.translation.minestomPos().let { pos ->
             ChunkRange.chunksInRange(
                 pos.chunkX(),
                 pos.chunkZ(),

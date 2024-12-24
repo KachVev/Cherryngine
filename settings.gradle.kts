@@ -11,6 +11,7 @@ rootProject.name = "Cherryngine"
 
 include(
     "engine-core",
+    "engine-scenes",
 
     "impl-demo",
 

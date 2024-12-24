@@ -1,24 +1,26 @@
-package ru.cherryngine.impl.demo.modules
+package ru.cherryngine.engine.scenes.modules
 
-import net.minestom.server.coordinate.ChunkRange
+import io.micronaut.context.annotation.Parameter
+import io.micronaut.context.annotation.Prototype
 import net.minestom.server.coordinate.Vec
 import net.minestom.server.entity.GameMode
 import net.minestom.server.entity.RelativeFlags
 import net.minestom.server.network.packet.server.ServerPacket
 import net.minestom.server.network.packet.server.play.*
-import net.minestom.server.registry.Registries
-import net.minestom.server.world.DimensionType
-import ru.cherryngine.engine.core.getId
 import ru.cherryngine.engine.core.minestomPos
 import ru.cherryngine.engine.core.server.ClientConnection
-import ru.cherryngine.impl.demo.GameObject
-import ru.cherryngine.impl.demo.Module
-import ru.cherryngine.impl.demo.event.EventBus
-import ru.cherryngine.impl.demo.event.impl.ClientLoadedEvent
-import ru.cherryngine.impl.demo.event.impl.ClientPacketEvent
+import ru.cherryngine.engine.scenes.GameObject
+import ru.cherryngine.engine.scenes.Module
+import ru.cherryngine.engine.scenes.event.EventBus
+import ru.cherryngine.engine.scenes.event.impl.ClientLoadedEvent
+import ru.cherryngine.engine.scenes.event.impl.ClientPacketEvent
 import ru.cherryngine.lib.math.Vec3D
 
-class ClientModule(val connection: ClientConnection, gameObject: GameObject? = null) : Module(gameObject) {
+@Prototype
+class ClientModule(
+    @Parameter override val gameObject: GameObject,
+    @Parameter val connection: ClientConnection,
+) : Module {
 
     val viewDistance = 8
 
@@ -33,8 +35,8 @@ class ClientModule(val connection: ClientConnection, gameObject: GameObject? = n
     }
 
     private fun spawn() {
-        gameObject!!.transform.position = Vec3D(169.5, 73.5, 137.5)
-        val position = gameObject!!.transform.position.minestomPos()
+        gameObject.transform.translation = Vec3D(169.5, 73.5, 137.5)
+        val position = gameObject.transform.translation.minestomPos()
 
         val packets: MutableList<ServerPacket.Play> = ArrayList()
 
@@ -43,7 +45,7 @@ class ClientModule(val connection: ClientConnection, gameObject: GameObject? = n
             viewDistance, viewDistance,
             false, true, false,
             0, "world",
-            0, GameMode.SPECTATOR, null, false, true,
+            0, GameMode.SURVIVAL, null, false, true,
             null, 0, 63, false
         )
 
