@@ -77,7 +77,7 @@ data class QRot(
     }
 
     operator fun div(other: QRot): QRot =
-        other.inverse() * this
+        this * other.inverse()
 
     fun inverse(): QRot = QRot(w, -x, -y, -z)
 

@@ -15,15 +15,17 @@ data class Transform(
     val r get() = rotation
     val s get() = scale
 
-    operator fun times(offset: Transform) = Transform(
-        translation + offset.translation.rotate(rotation),
-        rotation * offset.rotation,
-        scale * offset.scale
-    )
+    operator fun times(offset: Transform): Transform {
+        val translation = translation + (offset.translation * scale).rotate(rotation)
+        val rotation = rotation * offset.rotation
+        val scale = scale * offset.scale
+        return Transform(translation, rotation, scale)
+    }
 
-    operator fun div(offset: Transform): Transform = Transform(
-        (translation - offset.translation).rotate(offset.rotation.inverse()),
-        rotation / offset.rotation,
-        scale / offset.scale
-    )
+    operator fun div(offset: Transform): Transform {
+        val scale = scale / offset.scale
+        val rotation = rotation / offset.rotation
+        val translation = translation - (offset.translation * scale).rotate(rotation)
+        return Transform(translation, rotation, scale)
+    }
 }
