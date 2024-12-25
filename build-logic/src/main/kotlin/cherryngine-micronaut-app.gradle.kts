@@ -7,10 +7,6 @@ application {
     mainClass = "ru.cherryngine.engine.core.Main"
 }
 
-micronaut {
-    runtime("netty")
-}
-
 tasks {
     distZip {
         enabled = false
@@ -32,8 +28,7 @@ tasks {
     named<JavaExec>("run") {
         workingDir = projectDir.resolve("run/").apply {
             mkdirs()
-            val applicationYml = resolve("application.yml")
-            if (!applicationYml.exists()) applicationYml.createNewFile()
+            resolve("application.yml").apply { if (!exists()) createNewFile() }
         }
         jvmArgs = listOf("-Dmicronaut.config.files=application.yml")
         standardInput = System.`in`
