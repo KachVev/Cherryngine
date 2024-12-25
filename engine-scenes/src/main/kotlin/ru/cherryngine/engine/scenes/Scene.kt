@@ -1,12 +1,13 @@
 package ru.cherryngine.engine.scenes
 
 import io.micronaut.context.ApplicationContext
-import ru.cherryngine.engine.scenes.event.EventBus
+import ru.cherryngine.engine.scenes.event.Event
 import ru.cherryngine.engine.scenes.event.impl.SceneTickEvent
 import java.util.*
 
 class Scene(
     private val applicationContext: ApplicationContext,
+    private val sceneManager: SceneManager,
     val data: Data
 ) {
     val id: UUID = UUID.randomUUID()
@@ -18,8 +19,6 @@ class Scene(
     var tickStartMils = 0L
     var tickEndMils = 0L
     var tickElapsedMils = 0L
-
-    val bus = EventBus()
 
     private var isAlive = false
 
@@ -47,7 +46,7 @@ class Scene(
     }
 
     fun tick() {
-        bus.post(SceneTickEvent(this))
+        fireEvent(SceneTickEvent(this))
         tick++
     }
 
@@ -59,6 +58,15 @@ class Scene(
 
     fun destroyGameObject(id: UUID) {
         gameObjects.remove(id)?.destroy()
+    }
+
+    fun fireEvent(event: Event) {
+        val modules = gameObjects.flatMap { it.value.modules }.groupBy { it::class }
+        sceneManager.sortedModuleTypes.forEach { moduleType ->
+            modules[moduleType]?.forEach { module ->
+                module.onEvent(event)
+            }
+        }
     }
 
     data class Data(

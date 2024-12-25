@@ -11,8 +11,7 @@ import ru.cherryngine.engine.core.minestomPos
 import ru.cherryngine.engine.core.server.ClientConnection
 import ru.cherryngine.engine.scenes.GameObject
 import ru.cherryngine.engine.scenes.Module
-import ru.cherryngine.engine.scenes.event.EventBus
-import ru.cherryngine.engine.scenes.event.impl.ClientPacketEvent
+import ru.cherryngine.engine.scenes.event.Event
 import ru.cherryngine.lib.math.Vec3D
 
 @Prototype
@@ -20,21 +19,10 @@ class ClientModule(
     @Parameter override val gameObject: GameObject,
     @Parameter val connection: ClientConnection,
 ) : Module {
-
     val viewDistance = 8
 
-    val onPacket: (ClientPacketEvent) -> Unit = entry@ {
-        if (it.clientConnection != this.connection) return@entry
-        bus.post(it)
-    }
-
     override fun enable() {
-        EventBus.GLOBAL.subscribe(ClientPacketEvent::class.java, onPacket)
         spawn()
-    }
-
-    override fun destroy() {
-        EventBus.GLOBAL.unsubscribe(ClientPacketEvent::class.java, onPacket)
     }
 
     private fun spawn() {
@@ -62,10 +50,10 @@ class ClientModule(
 
         connection.sendPackets(packets)
 
-        bus.post(ClientLoadedEvent(this))
+        gameObject.scene.fireEvent(ClientLoadedEvent(this))
     }
 
     data class ClientLoadedEvent(
         val clientModule: ClientModule
-    )
+    ) : Event
 }

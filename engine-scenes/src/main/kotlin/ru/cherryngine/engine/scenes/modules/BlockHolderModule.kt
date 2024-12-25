@@ -7,6 +7,7 @@ import ru.cherryngine.engine.core.minestomPos
 import ru.cherryngine.engine.core.world.BlockHolder
 import ru.cherryngine.engine.scenes.GameObject
 import ru.cherryngine.engine.scenes.Module
+import ru.cherryngine.engine.scenes.event.Event
 import ru.cherryngine.engine.scenes.modules.client.ClientModule
 
 @Prototype
@@ -14,17 +15,10 @@ class BlockHolderModule(
     @Parameter override val gameObject: GameObject,
     @Parameter val blockHolder: BlockHolder,
 ) : Module {
-
-    val onLoad: (ClientModule.ClientLoadedEvent) -> Unit = {
-        show(it.clientModule)
-    }
-
-    override fun enable() {
-        gameObject.scene.bus.subscribe(ClientModule.ClientLoadedEvent::class.java, onLoad)
-    }
-
-    override fun destroy() {
-        gameObject.scene.bus.unsubscribe(ClientModule.ClientLoadedEvent::class.java, onLoad)
+    override fun onEvent(event: Event) {
+        if (event is ClientModule.ClientLoadedEvent) {
+            show(event.clientModule)
+        }
     }
 
     fun show(client: ClientModule) {

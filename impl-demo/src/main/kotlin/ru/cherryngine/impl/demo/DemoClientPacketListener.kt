@@ -20,18 +20,14 @@ import net.minestom.server.registry.Registries
 import org.intellij.lang.annotations.Language
 import ru.cherryngine.engine.core.server.ClientConnection
 import ru.cherryngine.engine.core.server.ClientPacketListener
-import ru.cherryngine.engine.scenes.SceneManager
-import ru.cherryngine.engine.scenes.event.EventBus
-import ru.cherryngine.engine.scenes.event.impl.ClientPacketEvent
 import ru.cherryngine.engine.scenes.modules.client.ClientModule
-import ru.cherryngine.engine.scenes.modules.client.Controller
 import ru.cherryngine.engine.scenes.modules.client.FirstPersonController
 
 @Singleton
-class ClientPacketListenerImpl(
+class DemoClientPacketListener(
     private val registries: Registries,
     private val tagManager: TagManager,
-    private val sceneManager: SceneManager
+    private val demo: Demo,
 ) : ClientPacketListener {
     val defaultTagsPacket: CachedPacket by lazy { CachedPacket(tagManager.packet(registries)) }
 
@@ -109,7 +105,7 @@ class ClientPacketListenerImpl(
         clientConnection: ClientConnection,
         packet: ClientFinishConfigurationPacket,
     ) {
-        sceneManager.masterScene.createGameObject().apply {
+        demo.masterScene.createGameObject().apply {
             val clientModule = getOrCreateModule(ClientModule::class, clientConnection)
             getOrCreateModule(FirstPersonController::class, clientModule)
             getOrCreateModule(DebugRenderer::class)
@@ -126,6 +122,5 @@ class ClientPacketListenerImpl(
             is ClientLoginAcknowledgedPacket -> onClientLoginAcknowledgedPacket(clientConnection, packet)
             is ClientFinishConfigurationPacket -> onClientFinishConfigurationPacket(clientConnection, packet)
         }
-        EventBus.GLOBAL.post(ClientPacketEvent(clientConnection, packet))
     }
 }

@@ -9,6 +9,7 @@ import ru.cherryngine.engine.core.asQRot
 import ru.cherryngine.engine.core.asVec3D
 import ru.cherryngine.engine.scenes.GameObject
 import ru.cherryngine.engine.scenes.Module
+import ru.cherryngine.engine.scenes.event.Event
 import ru.cherryngine.engine.scenes.event.impl.ClientPacketEvent
 import ru.cherryngine.lib.math.Vec3D
 import ru.cherryngine.lib.math.View
@@ -19,7 +20,6 @@ class FirstPersonController(
     @Parameter override val gameObject: GameObject,
     @Parameter val clientModule: ClientModule
 ) : Module, Controller, Camera {
-
     val onPacket: (ClientPacketEvent) -> Unit = entry@ {
         if (it.clientConnection != clientModule.connection) return@entry
         when (it.packet) {
@@ -42,12 +42,11 @@ class FirstPersonController(
         gameObject.transform.rotation = rot
     }
 
-    override fun enable() {
-        bus.subscribe(ClientPacketEvent::class.java, onPacket)
+    override fun onEvent(event: Event) {
+        if (event is ClientPacketEvent) {
+            if (clientModule.connection == event.clientConnection) {
+                onPacket(event)
+            }
+        }
     }
-
-    override fun destroy() {
-        bus.unsubscribe(ClientPacketEvent::class.java, onPacket)
-    }
-
 }

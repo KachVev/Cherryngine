@@ -4,31 +4,53 @@ import io.micronaut.context.ApplicationContext
 import jakarta.annotation.PostConstruct
 import jakarta.annotation.PreDestroy
 import jakarta.inject.Singleton
-import net.minestom.server.registry.Registries
-import net.minestom.server.world.DimensionType
-import ru.cherryngine.engine.core.world.BlockHolder
-import ru.cherryngine.engine.core.world.PolarChunkSupplier
-import ru.cherryngine.engine.scenes.modules.BlockHolderModule
+import org.jgrapht.Graph
+import org.jgrapht.graph.DefaultEdge
+import org.jgrapht.graph.DirectedAcyclicGraph
+import org.jgrapht.traverse.TopologicalOrderIterator
+import ru.cherryngine.engine.scenes.event.Event
 import java.util.*
+import kotlin.reflect.KClass
+import kotlin.reflect.full.findAnnotation
 
 @Singleton
 class SceneManager(
     private val applicationContext: ApplicationContext,
-    private val registries: Registries,
 ) {
     val scenes: MutableMap<UUID, Scene> = HashMap()
-    lateinit var masterScene: Scene
+
+    lateinit var sortedModuleTypes: List<KClass<out Module>>
+        private set
 
     @PostConstruct
     fun init() {
-        masterScene = createScene(data = Scene.Data(20))
+        //region Module sorting
+        val moduleTypes = applicationContext.getBeanDefinitions(Module::class.java).map { it.beanType.kotlin }
 
-        val blockHolder = BlockHolder(
-            registries.dimensionType().get(DimensionType.OVERWORLD)!!,
-            PolarChunkSupplier(javaClass.getResource("/world.polar")!!.readBytes(), registries)
-        )
+        val graph: Graph<KClass<out Module>, DefaultEdge> = DirectedAcyclicGraph(DefaultEdge::class.java)
+        moduleTypes.forEach(graph::addVertex)
+        moduleTypes.forEach { moduleType ->
+            val annotation = moduleType.findAnnotation<ModulePrototype>() ?: return@forEach
+            annotation.tickAfter.forEach { clazz ->
+                val after = moduleTypes.first { it::class == clazz }
+                graph.addEdge(moduleType, after)
+            }
+            annotation.tickBefore.forEach { clazz ->
+                val before = moduleTypes.first { it::class == clazz }
+                graph.addEdge(before, moduleType)
+            }
+        }
 
-        masterScene.createGameObject().getOrCreateModule(BlockHolderModule::class, blockHolder)
+        val priorityMap = moduleTypes.associateWith { moduleType ->
+            val annotation = moduleType.findAnnotation<ModulePrototype>()
+            val priority = annotation?.tickPriority ?: ModulePrototype.Priority.NORMAL
+            priority.ordinal
+        }
+
+        val priorityComparator = Comparator.comparingInt<KClass<out Module>> { priorityMap[it]!! }
+
+        sortedModuleTypes = TopologicalOrderIterator(graph, priorityComparator).asSequence().toList()
+        //endregion
     }
 
     @PreDestroy
@@ -42,10 +64,14 @@ class SceneManager(
     }
 
     fun createScene(data: Scene.Data): Scene {
-        return Scene(applicationContext, data).also {
+        return Scene(applicationContext, this, data).also {
             scenes[it.id] = it
             it.start()
         }
+    }
+
+    fun fireGlobalEvent(event: Event) {
+        scenes.values.forEach { it.fireEvent(event) }
     }
 
 }
