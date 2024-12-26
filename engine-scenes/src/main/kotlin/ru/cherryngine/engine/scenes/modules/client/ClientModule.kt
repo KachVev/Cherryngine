@@ -6,19 +6,25 @@ import net.minestom.server.coordinate.Vec
 import net.minestom.server.entity.GameMode
 import net.minestom.server.entity.RelativeFlags
 import net.minestom.server.network.packet.server.ServerPacket
+import net.minestom.server.network.packet.server.common.DisconnectPacket
 import net.minestom.server.network.packet.server.play.*
 import ru.cherryngine.engine.core.minestomPos
 import ru.cherryngine.engine.core.server.ClientConnection
 import ru.cherryngine.engine.scenes.GameObject
 import ru.cherryngine.engine.scenes.Module
+import ru.cherryngine.engine.scenes.ModulePrototype
 import ru.cherryngine.engine.scenes.event.Event
+import ru.cherryngine.engine.scenes.event.impl.ClientPacketEvent
+import ru.cherryngine.engine.scenes.modules.BlockHolderModule
+import ru.cherryngine.engine.scenes.view.Viewer
 import ru.cherryngine.lib.math.Vec3D
 
-@Prototype
+@ModulePrototype
 class ClientModule(
     @Parameter override val gameObject: GameObject,
     @Parameter val connection: ClientConnection,
-) : Module {
+) : Module, Viewer {
+
     val viewDistance = 8
 
     override fun enable() {
@@ -26,7 +32,6 @@ class ClientModule(
     }
 
     private fun spawn() {
-        gameObject.transform.translation = Vec3D(169.5, 73.5, 137.5)
         val position = gameObject.transform.translation.minestomPos()
 
         val packets: MutableList<ServerPacket.Play> = ArrayList()
@@ -50,7 +55,15 @@ class ClientModule(
 
         connection.sendPackets(packets)
 
-        gameObject.scene.fireEvent(ClientLoadedEvent(this))
+        scene.fireEvent(ClientLoadedEvent(this))
+    }
+
+    override fun onEvent(event: Event) {
+        when (event) {
+            is ClientPacketEvent -> {
+                val packet = event.packet
+            }
+        }
     }
 
     data class ClientLoadedEvent(

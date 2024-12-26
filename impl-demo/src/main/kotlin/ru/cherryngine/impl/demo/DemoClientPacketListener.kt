@@ -22,6 +22,7 @@ import ru.cherryngine.engine.core.server.ClientConnection
 import ru.cherryngine.engine.core.server.ClientPacketListener
 import ru.cherryngine.engine.scenes.modules.client.ClientModule
 import ru.cherryngine.engine.scenes.modules.client.FirstPersonController
+import ru.cherryngine.lib.math.Vec3D
 
 @Singleton
 class DemoClientPacketListener(
@@ -106,6 +107,7 @@ class DemoClientPacketListener(
         packet: ClientFinishConfigurationPacket,
     ) {
         demo.masterScene.createGameObject().apply {
+            transform.translation = Vec3D(169.5, 73.5, 137.5)
             val clientModule = getOrCreateModule(ClientModule::class, clientConnection)
             getOrCreateModule(FirstPersonController::class, clientModule)
             getOrCreateModule(DebugRenderer::class)

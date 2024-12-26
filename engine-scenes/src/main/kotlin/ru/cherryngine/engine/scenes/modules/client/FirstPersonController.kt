@@ -9,19 +9,19 @@ import ru.cherryngine.engine.core.asQRot
 import ru.cherryngine.engine.core.asVec3D
 import ru.cherryngine.engine.scenes.GameObject
 import ru.cherryngine.engine.scenes.Module
+import ru.cherryngine.engine.scenes.ModulePrototype
 import ru.cherryngine.engine.scenes.event.Event
 import ru.cherryngine.engine.scenes.event.impl.ClientPacketEvent
 import ru.cherryngine.lib.math.Vec3D
 import ru.cherryngine.lib.math.View
 import ru.cherryngine.lib.math.rotation.QRot
 
-@Prototype
+@ModulePrototype
 class FirstPersonController(
     @Parameter override val gameObject: GameObject,
     @Parameter val clientModule: ClientModule
 ) : Module, Controller, Camera {
-    val onPacket: (ClientPacketEvent) -> Unit = entry@ {
-        if (it.clientConnection != clientModule.connection) return@entry
+    val onPacket: (ClientPacketEvent) -> Unit = {
         when (it.packet) {
             is ClientPlayerPositionPacket -> setPos(it.packet.position.asVec3D())
             is ClientPlayerPositionAndRotationPacket -> {
@@ -35,6 +35,7 @@ class FirstPersonController(
     }
 
     override fun setPos(vec: Vec3D) {
+        gameObject.getModules(Camera::class)
         gameObject.transform.translation = vec
     }
 

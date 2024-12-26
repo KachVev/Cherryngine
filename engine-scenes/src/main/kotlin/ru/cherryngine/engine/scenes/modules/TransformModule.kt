@@ -4,11 +4,12 @@ import io.micronaut.context.annotation.Parameter
 import io.micronaut.context.annotation.Prototype
 import ru.cherryngine.engine.scenes.GameObject
 import ru.cherryngine.engine.scenes.Module
+import ru.cherryngine.engine.scenes.ModulePrototype
 import ru.cherryngine.lib.math.Transform
 import ru.cherryngine.lib.math.Vec3D
 import ru.cherryngine.lib.math.rotation.QRot
 
-@Prototype
+@ModulePrototype
 class TransformModule(
     @Parameter override val gameObject: GameObject,
 ) : Module {

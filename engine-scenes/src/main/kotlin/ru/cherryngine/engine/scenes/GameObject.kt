@@ -13,24 +13,32 @@ class GameObject(
 
     val transform: TransformModule = TransformModule(this)
 
-    private val modules_: MutableMap<KClass<out Module>, Module> = hashMapOf(
+    private val _modules: MutableMap<KClass<out Module>, Module> = hashMapOf(
         TransformModule::class to transform
     )
 
-    val modules get() = modules_.values.toList()
+    val modules get() = _modules.values.toList()
 
     fun <T : Module> getOrCreateModule(clazz: KClass<T>, vararg args: Any): Module {
-        return modules_.computeIfAbsent(clazz) {
+        return _modules.computeIfAbsent(clazz) {
             applicationContext.createBean(clazz.java, this, *args).apply(Module::enable)
         }
     }
 
-    fun <T : Module> getModule(clazz: KClass<T>): Module? {
-        return modules_[clazz]
+    @Suppress("UNCHECKED_CAST")
+    fun <T : Module> getModule(clazz: KClass<T>): T? {
+        return _modules[clazz] as T?
+    }
+
+    @Suppress("UNCHECKED_CAST")
+    fun <T : Module> getModules(clazz: KClass<T>): List<T> {
+        return _modules.values.filter {
+            clazz.isInstance(it)
+        }.map { it as T }.toList()
     }
 
     fun destroy() {
-        modules_.values.forEach(Module::destroy)
-        modules_.clear()
+        _modules.values.forEach(Module::destroy)
+        _modules.clear()
     }
 }

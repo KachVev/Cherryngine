@@ -1,20 +1,22 @@
 package ru.cherryngine.engine.scenes.modules
 
 import io.micronaut.context.annotation.Parameter
-import io.micronaut.context.annotation.Prototype
 import net.minestom.server.coordinate.ChunkRange
 import ru.cherryngine.engine.core.minestomPos
 import ru.cherryngine.engine.core.world.BlockHolder
 import ru.cherryngine.engine.scenes.GameObject
 import ru.cherryngine.engine.scenes.Module
+import ru.cherryngine.engine.scenes.ModulePrototype
 import ru.cherryngine.engine.scenes.event.Event
 import ru.cherryngine.engine.scenes.modules.client.ClientModule
+import ru.cherryngine.engine.scenes.view.Viewable
 
-@Prototype
+@ModulePrototype
 class BlockHolderModule(
     @Parameter override val gameObject: GameObject,
-    @Parameter val blockHolder: BlockHolder,
-) : Module {
+    @Parameter val blockHolder: BlockHolder
+) : Module, Viewable {
+
     override fun onEvent(event: Event) {
         if (event is ClientModule.ClientLoadedEvent) {
             show(event.clientModule)

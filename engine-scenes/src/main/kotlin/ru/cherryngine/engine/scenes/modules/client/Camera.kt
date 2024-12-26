@@ -1,3 +1,5 @@
 package ru.cherryngine.engine.scenes.modules.client
 
-interface Camera
+import ru.cherryngine.engine.scenes.Module
+
+interface Camera : Module

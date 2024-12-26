@@ -4,6 +4,7 @@ import io.micronaut.context.ApplicationContext
 import ru.cherryngine.engine.scenes.event.Event
 import ru.cherryngine.engine.scenes.event.impl.SceneTickEvent
 import java.util.*
+import kotlin.reflect.KClass
 
 class Scene(
     private val applicationContext: ApplicationContext,
@@ -58,6 +59,15 @@ class Scene(
 
     fun destroyGameObject(id: UUID) {
         gameObjects.remove(id)?.destroy()
+    }
+
+    @Suppress("UNCHECKED_CAST")
+    fun <T : Module> getModules(clazz: KClass<T>): List<T> {
+        val result: MutableList<T> = LinkedList()
+        gameObjects.values.filter {
+            result.addAll(it.getModules(clazz))
+        }.toList()
+        return result
     }
 
     fun fireEvent(event: Event) {
