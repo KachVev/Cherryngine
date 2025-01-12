@@ -2,7 +2,7 @@ package ru.cherryngine.engine.scenes.modules
 
 import io.micronaut.context.annotation.Parameter
 import net.minestom.server.entity.EntityType
-import ru.cherryngine.engine.core.world.entity.SEntity
+import ru.cherryngine.engine.core.world.entity.EngineEntity
 import ru.cherryngine.engine.scenes.GameObject
 import ru.cherryngine.engine.scenes.Module
 import ru.cherryngine.engine.scenes.ModulePrototype
@@ -35,12 +35,12 @@ class ModelRenderer(
     class Model (
         @Parameter override val gameObject: GameObject,
     ) : Module, Viewable {
-        private val entity = SEntity(EntityType.ITEM_DISPLAY)
+        private val entity = EngineEntity(EntityType.ITEM_DISPLAY)
 
         override fun showFor(viewer: Viewer) {
             when (viewer) {
                 is ClientModule -> {
-                    entity.protocolEntity.show(viewer.connection)
+                    entity.show(viewer.connection)
                 }
                 else -> viewer.show(this)
             }

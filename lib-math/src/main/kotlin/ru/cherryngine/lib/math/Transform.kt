@@ -28,4 +28,20 @@ data class Transform(
         val translation = translation - (offset.translation * scale).rotate(rotation)
         return Transform(translation, rotation, scale)
     }
+
+    operator fun plus(transform: Transform): Transform {
+        return Transform(
+            translation + transform.translation,
+            rotation + transform.rotation,
+            scale + transform.scale,
+            )
+    }
+
+    operator fun minus(transform: Transform): Transform {
+        return Transform(
+            translation - transform.translation,
+            rotation - transform.rotation,
+            scale - transform.scale,
+            )
+    }
 }

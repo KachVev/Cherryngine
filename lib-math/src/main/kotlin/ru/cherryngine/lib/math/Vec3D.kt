@@ -112,4 +112,12 @@ data class Vec3D(
         )
 
     fun rotate(rot: QRot): Vec3D = rot.apply(this)
+
+    override fun equals(other: Any?): Boolean {
+        return when (other) {
+            is Vec3D -> other.x == x && other.y == y && other.z == z
+            else -> super.equals(other)
+        }
+    }
+
 }

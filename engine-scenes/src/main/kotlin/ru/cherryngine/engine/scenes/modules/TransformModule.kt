@@ -13,5 +13,13 @@ import ru.cherryngine.lib.math.rotation.QRot
 class TransformModule(
     @Parameter override val gameObject: GameObject,
 ) : Module {
+
     var local: Transform = Transform(Vec3D.ZERO, QRot.IDENTITY, Vec3D.ONE)
+    val global: Transform
+        get() {
+            gameObject.parent?.let {
+                return it.transform.global + local
+            }
+            return local
+        }
 }

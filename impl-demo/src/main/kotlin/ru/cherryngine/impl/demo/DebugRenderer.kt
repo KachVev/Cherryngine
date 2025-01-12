@@ -3,7 +3,7 @@ package ru.cherryngine.impl.demo
 import io.micronaut.context.annotation.Parameter
 import io.micronaut.context.annotation.Prototype
 import net.minestom.server.entity.EntityType
-import ru.cherryngine.engine.core.world.entity.SEntity
+import ru.cherryngine.engine.core.world.entity.EngineEntity
 import ru.cherryngine.engine.scenes.GameObject
 import ru.cherryngine.engine.scenes.Module
 import ru.cherryngine.engine.scenes.view.Viewable
@@ -17,7 +17,7 @@ class DebugRenderer(
     @Parameter override val gameObject: GameObject
 ) : Module, Viewable {
 
-    val entity = SEntity(EntityType.CREEPER)
+    val entity = EngineEntity(EntityType.CREEPER)
 
     val onTick: (SceneTickEvent) -> Unit = entry@ { event ->
         val module = event.scene.getModules(ClientModule::class)

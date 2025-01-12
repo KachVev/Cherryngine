@@ -50,4 +50,11 @@ data class View(
         if (pitch == 0f) return getYawRotation()
         return getYawRotation() * getPitchRotation()
     }
+
+    override fun equals(other: Any?): Boolean {
+        return when (other) {
+            is View -> other.yaw == yaw && other.pitch == pitch
+            else -> super.equals(other)
+        }
+    }
 }
