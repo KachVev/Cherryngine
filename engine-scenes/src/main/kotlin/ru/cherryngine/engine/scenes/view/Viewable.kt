@@ -4,6 +4,6 @@ import ru.cherryngine.engine.scenes.GameObject
 import ru.cherryngine.engine.scenes.Module
 
 interface Viewable {
-    fun showFor(module: Module) = Unit
-    fun hideFor(module: Module) = Unit
+    fun showFor(viewer: Viewer) = Unit
+    fun hideFor(viewer: Viewer) = Unit
 }

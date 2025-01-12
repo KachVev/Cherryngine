@@ -125,4 +125,7 @@ class DemoClientPacketListener(
             is ClientFinishConfigurationPacket -> onClientFinishConfigurationPacket(clientConnection, packet)
         }
     }
+
+    override fun onDisconnect(clientConnection: ClientConnection) {
+    }
 }

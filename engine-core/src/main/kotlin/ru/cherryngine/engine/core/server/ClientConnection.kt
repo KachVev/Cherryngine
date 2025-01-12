@@ -55,6 +55,7 @@ class ClientConnection(
 
     fun disconnect() {
         online = false
+        clientPacketListeners.forEach { it.onDisconnect(this) }
     }
 
     fun read(packetParser: PacketParser<ClientPacket>) {

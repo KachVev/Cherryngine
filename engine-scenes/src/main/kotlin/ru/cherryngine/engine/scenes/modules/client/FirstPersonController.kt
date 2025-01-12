@@ -21,6 +21,7 @@ class FirstPersonController(
     @Parameter override val gameObject: GameObject,
     @Parameter val clientModule: ClientModule
 ) : Module, Controller, Camera {
+
     val onPacket: (ClientPacketEvent) -> Unit = {
         when (it.packet) {
             is ClientPlayerPositionPacket -> setPos(it.packet.position.asVec3D())

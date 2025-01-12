@@ -4,6 +4,7 @@ import io.micronaut.context.ApplicationContext
 import ru.cherryngine.engine.scenes.event.Event
 import ru.cherryngine.engine.scenes.event.impl.SceneTickEvent
 import java.util.*
+import kotlin.collections.HashSet
 import kotlin.reflect.KClass
 
 class Scene(
@@ -13,7 +14,8 @@ class Scene(
 ) {
     val id: UUID = UUID.randomUUID()
 
-    val gameObjects = HashMap<UUID, GameObject>()
+    val gameObjects: MutableMap<UUID, GameObject> = HashMap()
+    val parents: MutableMap<UUID, MutableSet<UUID>> = HashMap()
 
     var tick = 0L
 
@@ -52,8 +54,8 @@ class Scene(
     }
 
     fun createGameObject() : GameObject {
-        return GameObject(applicationContext, this).also {
-            gameObjects[it.id] = it
+        return GameObject(applicationContext, this).apply {
+            gameObjects[id] = this
         }
     }
 
@@ -61,7 +63,6 @@ class Scene(
         gameObjects.remove(id)?.destroy()
     }
 
-    @Suppress("UNCHECKED_CAST")
     fun <T : Module> getModules(clazz: KClass<T>): List<T> {
         val result: MutableList<T> = LinkedList()
         gameObjects.values.filter {

@@ -13,15 +13,5 @@ import ru.cherryngine.lib.math.rotation.QRot
 class TransformModule(
     @Parameter override val gameObject: GameObject,
 ) : Module {
-    var translation = Vec3D.ZERO
-    var rotation = QRot.IDENTITY
-    var scale = Vec3D.ONE
-
-    var transform: Transform
-        get() = Transform(translation, rotation, scale)
-        set(value) {
-            translation = value.translation
-            rotation = value.rotation
-            scale = value.scale
-        }
+    var local: Transform = Transform(Vec3D.ZERO, QRot.IDENTITY, Vec3D.ONE)
 }

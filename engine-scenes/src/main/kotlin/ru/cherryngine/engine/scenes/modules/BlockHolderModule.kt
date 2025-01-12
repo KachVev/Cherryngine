@@ -10,6 +10,7 @@ import ru.cherryngine.engine.scenes.ModulePrototype
 import ru.cherryngine.engine.scenes.event.Event
 import ru.cherryngine.engine.scenes.modules.client.ClientModule
 import ru.cherryngine.engine.scenes.view.Viewable
+import ru.cherryngine.engine.scenes.view.Viewer
 
 @ModulePrototype
 class BlockHolderModule(
@@ -18,24 +19,32 @@ class BlockHolderModule(
 ) : Module, Viewable {
 
     override fun onEvent(event: Event) {
-        if (event is ClientModule.ClientLoadedEvent) {
-            show(event.clientModule)
-        }
-    }
-
-    fun show(client: ClientModule) {
-        client.gameObject.transform.translation.minestomPos().let { pos ->
-            ChunkRange.chunksInRange(
-                pos.chunkX(),
-                pos.chunkZ(),
-                client.viewDistance
-            ) { x: Int, z: Int ->
-                blockHolder.generatePacket(x, z)?.let { client.connection.sendPackets(it) }
+        when (event) {
+            is ClientModule.ClientLoadedEvent -> {
+                showFor(event.clientModule)
             }
         }
+
     }
 
-    fun hide(client: ClientModule) {
-        TODO("ТУТ КРЧ СКРЫВАЕМ БЛОКС")
+    override fun showFor(viewer: Viewer) {
+        when (viewer) {
+            is ClientModule -> {
+                viewer.gameObject.transform.translation.minestomPos().let { pos ->
+                    ChunkRange.chunksInRange(
+                        pos.chunkX(),
+                        pos.chunkZ(),
+                        viewer.viewDistance
+                    ) { x: Int, z: Int ->
+                        blockHolder.generatePacket(x, z)?.let { viewer.connection.sendPackets(it) }
+                    }
+                }
+            }
+            else -> viewer.show(this)
+        }
+    }
+
+    override fun hideFor(viewer: Viewer) {
+        viewer.hide(this)
     }
 }
