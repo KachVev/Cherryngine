@@ -22,16 +22,7 @@ class ModelRenderer(
 
     }
 
-    override fun showFor(viewer: Viewer) {
-        bones.forEach {
-            it.value.showFor(viewer)
-        }
-    }
-
-    override fun hideFor(viewer: Viewer) {
-        viewer.hide(this)
-    }
-
+    @ModulePrototype
     class Model (
         @Parameter override val gameObject: GameObject,
     ) : Module, Viewable {
@@ -40,11 +31,20 @@ class ModelRenderer(
         override fun showFor(viewer: Viewer) {
             when (viewer) {
                 is ClientModule -> {
+                    entity.position = gameObject.transform.global.translation
                     entity.show(viewer.connection)
                 }
                 else -> viewer.show(this)
             }
-            super.showFor(viewer)
+        }
+
+        override fun hideFor(viewer: Viewer) {
+            when (viewer) {
+                is ClientModule -> {
+                    entity.hide(viewer.connection)
+                }
+                else -> viewer.show(this)
+            }
         }
     }
 }

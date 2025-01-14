@@ -14,8 +14,11 @@ class GameObject(
 
     val transform: TransformModule = TransformModule(this)
 
-    val parent: GameObject?
+    var parent: GameObject?
         get() = scene.getParentId(id)?.let(scene::getGameObject)
+        set(value) {
+            value?.let { setParent(it.id) }
+        }
 
     val children: List<GameObject>
         get() = scene.getChildrenIds(id).map(scene::getGameObject)

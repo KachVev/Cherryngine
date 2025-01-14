@@ -18,19 +18,10 @@ class BlockHolderModule(
     @Parameter val blockHolder: BlockHolder
 ) : Module, Viewable {
 
-    override fun onEvent(event: Event) {
-        when (event) {
-            is ClientModule.ClientLoadedEvent -> {
-                showFor(event.clientModule)
-            }
-        }
-
-    }
-
     override fun showFor(viewer: Viewer) {
         when (viewer) {
             is ClientModule -> {
-                viewer.gameObject.transform.translation.minestomPos().let { pos ->
+                viewer.gameObject.transform.global.translation.minestomPos().let { pos ->
                     ChunkRange.chunksInRange(
                         pos.chunkX(),
                         pos.chunkZ(),

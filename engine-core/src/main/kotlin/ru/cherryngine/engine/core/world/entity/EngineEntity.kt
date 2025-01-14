@@ -6,6 +6,7 @@ import net.minestom.server.entity.MetadataHolder
 import net.minestom.server.entity.RelativeFlags
 import net.minestom.server.entity.metadata.EntityMeta
 import net.minestom.server.network.packet.server.ServerPacket
+import net.minestom.server.network.packet.server.ServerPacket.Play
 import net.minestom.server.network.packet.server.play.*
 import ru.cherryngine.engine.core.minestomPos
 import ru.cherryngine.engine.core.server.ClientConnection
@@ -31,7 +32,7 @@ class EngineEntity(
     var oldPosition: Vec3D = Vec3D.ZERO
     var position: Vec3D = Vec3D.ZERO
 
-    private val minestomPos: MinestomPos = position.minestomPos(rotation)
+    private val minestomPos: MinestomPos get() = position.minestomPos(rotation)
 
     var onGround: Boolean = false
     var velocity: Vec3D = Vec3D.ZERO
@@ -74,13 +75,17 @@ class EngineEntity(
             rotationChanged = true
         }
 
-        if (positionChanged || rotationChanged) {
-            val teleportPacket = teleportPacket
-            viewers.forEach { it.sendPacket(teleportPacket) }
+        when {
+            positionChanged && rotationChanged -> arrayOf(positionAndRotationPacket, headLookPacket)
+            positionChanged -> arrayOf(positionPacket)
+            rotationChanged -> arrayOf(rotationPacket, headLookPacket)
+            else -> null
+        }?.let { packets ->
+            viewers.forEach { it.sendPackets(*packets) }
         }
     }
 
-    private val spawnPacket: ServerPacket.Play
+    private val spawnPacket: Play
         get() {
             return if (entityType.registry().spawnType() == EntitySpawnType.EXPERIENCE_ORB) {
                 SpawnExperienceOrbPacket(entityId, minestomPos, data.toShort())
@@ -109,6 +114,32 @@ class EngineEntity(
     private val destroyPacket: DestroyEntitiesPacket
         get() = DestroyEntitiesPacket(entityId)
 
+    val positionPacket: Play
+        get() {
+            val diff = position - oldPosition
+            return if ((diff).length() > 8) {
+                teleportPacket
+            } else {
+                EntityPositionPacket.getPacket(entityId, minestomPos, oldPosition.minestomPos(rotation), onGround)
+            }
+        }
+
+    val rotationPacket: Play
+        get() = EntityRotationPacket(entityId, rotation.yaw, rotation.pitch, onGround)
+
+    val headLookPacket: Play
+        get() = EntityHeadLookPacket(entityId, rotation.yaw)
+
+
+    val positionAndRotationPacket: Play
+        get() {
+            val diff = position - oldPosition
+            return if ((diff).length() > 8) {
+                teleportPacket
+            } else {
+                EntityPositionAndRotationPacket.getPacket(entityId, minestomPos, oldPosition.minestomPos(rotation), onGround)
+            }
+        }
     fun show(viewer: ClientConnection) {
         this.viewers.add(viewer)
         viewer.sendPackets(spawnPacket, metaPacket)

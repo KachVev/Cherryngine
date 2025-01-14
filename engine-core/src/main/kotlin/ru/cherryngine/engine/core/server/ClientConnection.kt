@@ -136,6 +136,7 @@ class ClientConnection(
     }
 
     fun sendPacket(packet: SendablePacket) {
+        println(packet)
         packetQueue.relaxedOffer(packet)
     }
 

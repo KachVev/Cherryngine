@@ -8,6 +8,7 @@ import ru.cherryngine.engine.core.world.PolarChunkSupplier
 import ru.cherryngine.engine.scenes.Scene
 import ru.cherryngine.engine.scenes.SceneManager
 import ru.cherryngine.engine.scenes.modules.BlockHolderModule
+import ru.cherryngine.engine.scenes.modules.ViewSynchronizer
 
 @Singleton
 class Demo(
@@ -23,5 +24,9 @@ class Demo(
         )
 
         masterScene.createGameObject().getOrCreateModule(BlockHolderModule::class, blockHolder)
+
+        masterScene.createGameObject().apply {
+            getOrCreateModule(ViewSynchronizer::class)
+        }
     }
 }

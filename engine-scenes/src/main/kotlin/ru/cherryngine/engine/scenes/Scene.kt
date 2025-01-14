@@ -102,7 +102,7 @@ class Scene(
     }
 
     fun removeParent(childId: UUID) {
-        // Ввообще парент может быть только один, но хуле и не итернуться целиком
+
         parentGraph.incomingEdgesOf(childId).forEach(parentGraph::removeEdge)
     }
 

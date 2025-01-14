@@ -1,6 +1,7 @@
 package ru.cherryngine.lib.math.rotation
 
 import ru.cherryngine.lib.math.Vec3D
+import ru.cherryngine.lib.math.View
 import kotlin.math.*
 
 data class QRot(
@@ -51,7 +52,7 @@ data class QRot(
             val q1 = fromAxisAngle(axes.axis1, sequence.angle1)
             val q2 = fromAxisAngle(axes.axis2, sequence.angle2)
             val q3 = fromAxisAngle(axes.axis3, sequence.angle3)
-            return q1.times(q2).times(q3)
+            return q1 * q2 * q3
         }
     }
 
@@ -197,4 +198,5 @@ data class QRot(
             return AxisAngleSequence(axes, atan2(angle1TanY, angle1TanX), angle2, 0.0)
         }
     }
+
 }
