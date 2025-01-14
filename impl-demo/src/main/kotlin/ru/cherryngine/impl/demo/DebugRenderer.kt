@@ -36,14 +36,14 @@ class DebugRenderer(
 
     override fun showFor(viewer: Viewer) {
         when (viewer) {
-            is ClientModule -> entity.protocolEntity.show(viewer.connection)
+            is ClientModule -> entity.show(viewer.connection)
             else -> viewer.show(this)
         }
     }
 
     override fun hideFor(viewer: Viewer) {
         when (viewer) {
-            is ClientModule -> entity.protocolEntity.hide(viewer.connection)
+            is ClientModule -> entity.hide(viewer.connection)
             else -> viewer.hide(this)
         }
     }

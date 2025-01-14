@@ -1,35 +1,42 @@
 package ru.cherryngine.engine.core.world.entity
 
-import net.minestom.server.coordinate.Pos
+import net.minestom.server.entity.EntitySpawnType
 import net.minestom.server.entity.EntityType
 import net.minestom.server.entity.MetadataHolder
+import net.minestom.server.entity.RelativeFlags
 import net.minestom.server.entity.metadata.EntityMeta
-import ru.cherryngine.engine.core.*
+import net.minestom.server.network.packet.server.ServerPacket
+import net.minestom.server.network.packet.server.play.*
+import ru.cherryngine.engine.core.minestomPos
 import ru.cherryngine.engine.core.server.ClientConnection
 import ru.cherryngine.lib.math.Vec3D
 import ru.cherryngine.lib.math.View
+import java.util.*
 import kotlin.reflect.KClass
+import net.minestom.server.coordinate.Pos as MinestomPos
+import net.minestom.server.coordinate.Vec as MinestomVec
+import net.minestom.server.entity.Entity as MinestomEntity
 
 class EngineEntity(
-    entityType: EntityType,
+    val entityType: EntityType,
+    val data: Int = 0,
 ) {
-    val protocolEntity = ProtocolEntity(entityType)
+    val entityId: Int = MinestomEntity.generateId()
+    val uuid: UUID = UUID.randomUUID()
+    val metadata: MetadataHolder = MetadataHolder(null)
 
-    var rotation: View
-        get() {
-            return protocolEntity.position.asView()
-        }
-        set(value) {
-            protocolEntity.position = value.minestomPos(protocolEntity.position.asVec3D())
-        }
+    var oldRotation: View = View.ZERO
+    var rotation: View = View.ZERO
 
-    var position: Vec3D
-        get() {
-            return protocolEntity.position.asVec3D()
-        }
-        set(value) {
-            protocolEntity.position = value.minestomPos()
-        }
+    var oldPosition: Vec3D = Vec3D.ZERO
+    var position: Vec3D = Vec3D.ZERO
+
+    private val minestomPos: MinestomPos = position.minestomPos(rotation)
+
+    var onGround: Boolean = false
+    var velocity: Vec3D = Vec3D.ZERO
+
+    private val packetVelocity: Vec3D get() = velocity * (8000.0 / 20.0)
 
     private val viewers: HashSet<ClientConnection> = hashSetOf()
 
@@ -44,61 +51,76 @@ class EngineEntity(
     }
 
     fun editEntityMeta(editor: (MetadataHolder) -> Unit) {
-        editor(protocolEntity.metadata)
-        val metaPacket = protocolEntity.metaPacket
+        editor(metadata)
+        val metaPacket = metaPacket
         viewers.forEach { it.sendPacket(metaPacket) }
     }
 
-    fun teleport(position: Pos? = null) {
-        if (position != null) this.position = position.asVec3D()
-        protocolEntity.teleportPacket.let {
-            viewers.forEach(ClientConnection::sendPackets)
+    fun updatePositionAndRotation(
+        newPosition: Vec3D? = null,
+        newRotation: View? = null,
+    ) {
+        var positionChanged = false
+        if (newPosition != null && position != newPosition) {
+            oldPosition = position
+            position = newPosition
+            positionChanged = true
+        }
+
+        var rotationChanged = false
+        if (newRotation != null && rotation != newRotation) {
+            oldRotation = rotation
+            rotation = newRotation
+            rotationChanged = true
+        }
+
+        if (positionChanged || rotationChanged) {
+            val teleportPacket = teleportPacket
+            viewers.forEach { it.sendPacket(teleportPacket) }
         }
     }
 
-    fun updatePositionAndRotation(position: Vec3D? = null, rotation: View? = null) {
-        val positionChanged = position?.let {
-            if (it != protocolEntity.position.asVec3D()) {
-                this.position = it
-                true
-            } else false
-        } ?: false
-
-        val rotationChanged = rotation?.let {
-            if (it != protocolEntity.position.asView()) {
-                this.rotation = it
-                true
-            } else false
-        } ?: false
-
-        when {
-            positionChanged && rotationChanged -> protocolEntity.positionAndRotationPacket
-            positionChanged -> protocolEntity.positionPacket
-            rotationChanged -> protocolEntity.rotationPacket
-            else -> null
-        }?.let {
-            viewers.forEach(ClientConnection::sendPackets)
+    private val spawnPacket: ServerPacket.Play
+        get() {
+            return if (entityType.registry().spawnType() == EntitySpawnType.EXPERIENCE_ORB) {
+                SpawnExperienceOrbPacket(entityId, minestomPos, data.toShort())
+            } else {
+                val packetVelocity = packetVelocity
+                SpawnEntityPacket(
+                    entityId,
+                    uuid,
+                    entityType.id(),
+                    minestomPos,
+                    rotation.yaw,
+                    data,
+                    packetVelocity.x.toInt().toShort(),
+                    packetVelocity.y.toInt().toShort(),
+                    packetVelocity.z.toInt().toShort(),
+                )
+            }
         }
-    }
+
+    private val metaPacket: EntityMetaDataPacket
+        get() = EntityMetaDataPacket(entityId, metadata.entries)
+
+    private val teleportPacket: EntityTeleportPacket
+        get() = EntityTeleportPacket(entityId, minestomPos, MinestomVec.ZERO, RelativeFlags.DELTA, onGround)
+
+    private val destroyPacket: DestroyEntitiesPacket
+        get() = DestroyEntitiesPacket(entityId)
 
     fun show(viewer: ClientConnection) {
         this.viewers.add(viewer)
-        val spawnPacket = protocolEntity.spawnPacket
-        val metaPacket = protocolEntity.metaPacket
-        viewer.sendPacket(spawnPacket)
-        viewer.sendPacket(metaPacket)
+        viewer.sendPackets(spawnPacket, metaPacket)
     }
 
     fun hide(viewer: ClientConnection) {
-        val destroyPacket = protocolEntity.destroyPacket
-        viewers.forEach {
-            it.sendPacket(destroyPacket)
-        }
-        this.viewers.removeAll(viewers)
+        viewer.sendPacket(destroyPacket)
+        this.viewers.remove(viewer)
     }
 
     fun remove() {
-        val destroyPacket = protocolEntity.destroyPacket
+        val destroyPacket = destroyPacket
         viewers.forEach { it.sendPacket(destroyPacket) }
         viewers.clear()
     }
