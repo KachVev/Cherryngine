@@ -12,12 +12,12 @@ import kotlin.reflect.KClass
 class Scene(
     private val applicationContext: ApplicationContext,
     private val sceneManager: SceneManager,
-    val data: Data
+    val data: Data,
 ) {
     val id: UUID = UUID.randomUUID()
 
     val gameObjects: MutableMap<UUID, GameObject> = HashMap()
-    val parentGraph: Graph<UUID, DefaultEdge> = DirectedAcyclicGraph(DefaultEdge::class.java)
+    private val parentGraph: Graph<UUID, DefaultEdge> = DirectedAcyclicGraph(DefaultEdge::class.java)
 
     var tick = 0L
 
@@ -55,7 +55,7 @@ class Scene(
         tick++
     }
 
-    fun createGameObject() : GameObject {
+    fun createGameObject(): GameObject {
         return GameObject(applicationContext, this).apply {
             gameObjects[id] = this
             parentGraph.addVertex(id)
@@ -84,7 +84,33 @@ class Scene(
         }
     }
 
+    fun getParentId(childId: UUID): UUID? {
+        return parentGraph.incomingEdgesOf(childId).firstOrNull()?.let(parentGraph::getEdgeSource)
+    }
+
+    fun getChildrenIds(parentId: UUID): List<UUID> {
+        return parentGraph.outgoingEdgesOf(parentId).map(parentGraph::getEdgeTarget)
+    }
+
+    fun addChild(parentId: UUID, childId: UUID) {
+        removeParent(childId)
+        parentGraph.addEdge(parentId, childId)
+    }
+
+    fun removeParent(childId: UUID) {
+        // Ввообще парент может быть только один, но хуле и не итернуться целиком
+        parentGraph.incomingEdgesOf(childId).forEach(parentGraph::removeEdge)
+    }
+
+    fun removeChild(parentId: UUID, childId: UUID): Boolean {
+        return parentGraph.removeEdge(parentId, childId) != null
+    }
+
+    fun removeAllChildren(parentId: UUID) {
+        parentGraph.outgoingEdgesOf(parentId).forEach(parentGraph::removeEdge)
+    }
+
     data class Data(
-        val tps: Int
+        val tps: Int,
     )
 }

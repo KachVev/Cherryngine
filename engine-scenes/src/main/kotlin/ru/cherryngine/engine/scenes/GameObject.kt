@@ -15,21 +15,10 @@ class GameObject(
     val transform: TransformModule = TransformModule(this)
 
     val parent: GameObject?
-        get() {
-            val graph = scene.parentGraph
-            val parentId = graph.incomingEdgesOf(id).firstOrNull()?.let(graph::getEdgeSource)
-            return parentId?.let { scene.gameObjects[it] }
-        }
+        get() = scene.getParentId(id)?.let { scene.gameObjects[it] }
 
     val children: List<GameObject>
-        get() {
-            val graph = scene.parentGraph
-            return graph.outgoingEdgesOf(id).asSequence()
-                .map { graph.getEdgeTarget(it) }
-                .mapNotNull { scene.gameObjects[it] }
-                .toList()
-        }
-
+        get() = scene.getChildrenIds(id).mapNotNull { scene.gameObjects[it] }
 
     private val _modules: MutableMap<KClass<out Module>, Module> = hashMapOf(
         TransformModule::class to transform
@@ -56,24 +45,24 @@ class GameObject(
         }.map { it as T }.toList()
     }
 
-//    fun addChild(child: UUID) {
-//        scene.parents.computeIfAbsent(id) { HashSet() }.add(child)
-//    }
+    fun setParent(parent: UUID) {
+        scene.addChild(parent, id)
+    }
 
     fun addChild(child: UUID) {
-        val graph = scene.parentGraph
-        val oldParentEdge = graph.incomingEdgesOf(child).firstOrNull()
-        oldParentEdge?.let(graph::removeEdge)
-        graph.addEdge(this.id, child)
+        scene.addChild(id, child)
     }
 
     fun removeAllChildren() {
-        val graph = scene.parentGraph
-        graph.outgoingEdgesOf(id).forEach(graph::removeEdge)
+        scene.removeAllChildren(id)
     }
 
     fun removeChild(child: UUID) {
-        scene.parentGraph.removeEdge(id, child)
+        scene.removeChild(id, child)
+    }
+
+    fun removeParent() {
+        scene.removeParent(id)
     }
 
     fun destroy() {
