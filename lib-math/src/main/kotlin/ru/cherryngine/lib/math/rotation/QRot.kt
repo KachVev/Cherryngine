@@ -197,24 +197,4 @@ data class QRot(
             return AxisAngleSequence(axes, atan2(angle1TanY, angle1TanX), angle2, 0.0)
         }
     }
-
-    operator fun plus(rotation: QRot): QRot {
-        return of(
-            w + rotation.w,
-            x + rotation.x,
-            y + rotation.y,
-            z + rotation.z,
-        )
-    }
-
-    operator fun minus(rotation: QRot): QRot {
-        return of(
-            w + rotation.w,
-            x + rotation.x,
-            y + rotation.y,
-            z + rotation.z,
-        )
-    }
-
-
 }
