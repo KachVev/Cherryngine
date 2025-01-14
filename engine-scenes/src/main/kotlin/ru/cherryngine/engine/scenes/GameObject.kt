@@ -3,8 +3,6 @@ package ru.cherryngine.engine.scenes
 import io.micronaut.context.ApplicationContext
 import ru.cherryngine.engine.scenes.modules.TransformModule
 import java.util.*
-import kotlin.collections.ArrayList
-import kotlin.collections.HashSet
 import kotlin.reflect.KClass
 
 class GameObject(
@@ -18,12 +16,19 @@ class GameObject(
 
     val parent: GameObject?
         get() {
-            val parentKey = scene.parents.keys.find { scene.parents.getValue(it).contains(id) }
-            return parentKey?.let { scene.gameObjects[it] }
+            val graph = scene.parentGraph
+            val parentId = graph.incomingEdgesOf(id).firstOrNull()?.let(graph::getEdgeSource)
+            return parentId?.let { scene.gameObjects[it] }
         }
 
     val children: List<GameObject>
-        get() = scene.parents.mapNotNull { scene.gameObjects[it.key] }.toList()
+        get() {
+            val graph = scene.parentGraph
+            return graph.outgoingEdgesOf(id).asSequence()
+                .map { graph.getEdgeTarget(it) }
+                .mapNotNull { scene.gameObjects[it] }
+                .toList()
+        }
 
 
     private val _modules: MutableMap<KClass<out Module>, Module> = hashMapOf(
@@ -56,21 +61,19 @@ class GameObject(
 //    }
 
     fun addChild(child: UUID) {
-        scene.gameObjects[child]?.let {
-            val parent = it.parent
-            if (parent != null) {
-                scene.parents[parent.id]?.remove(child)
-            }
-            scene.parents.computeIfAbsent(id) { HashSet() }.add(child)
-        }
+        val graph = scene.parentGraph
+        val oldParentEdge = graph.incomingEdgesOf(child).firstOrNull()
+        oldParentEdge?.let(graph::removeEdge)
+        graph.addEdge(this.id, child)
     }
 
     fun removeAllChildren() {
-        scene.parents[id]?.clear()
+        val graph = scene.parentGraph
+        graph.outgoingEdgesOf(id).forEach(graph::removeEdge)
     }
 
     fun removeChild(child: UUID) {
-        scene.parents[id]?.remove(child)
+        scene.parentGraph.removeEdge(id, child)
     }
 
     fun destroy() {

@@ -1,10 +1,12 @@
 package ru.cherryngine.engine.scenes
 
 import io.micronaut.context.ApplicationContext
+import org.jgrapht.Graph
+import org.jgrapht.graph.DefaultEdge
+import org.jgrapht.graph.DirectedAcyclicGraph
 import ru.cherryngine.engine.scenes.event.Event
 import ru.cherryngine.engine.scenes.event.impl.SceneTickEvent
 import java.util.*
-import kotlin.collections.HashSet
 import kotlin.reflect.KClass
 
 class Scene(
@@ -15,7 +17,7 @@ class Scene(
     val id: UUID = UUID.randomUUID()
 
     val gameObjects: MutableMap<UUID, GameObject> = HashMap()
-    val parents: MutableMap<UUID, MutableSet<UUID>> = HashMap()
+    val parentGraph: Graph<UUID, DefaultEdge> = DirectedAcyclicGraph(DefaultEdge::class.java)
 
     var tick = 0L
 
@@ -56,11 +58,13 @@ class Scene(
     fun createGameObject() : GameObject {
         return GameObject(applicationContext, this).apply {
             gameObjects[id] = this
+            parentGraph.addVertex(id)
         }
     }
 
     fun destroyGameObject(id: UUID) {
         gameObjects.remove(id)?.destroy()
+        parentGraph.removeVertex(id)
     }
 
     fun <T : Module> getModules(clazz: KClass<T>): List<T> {
