@@ -15,10 +15,10 @@ class GameObject(
     val transform: TransformModule = TransformModule(this)
 
     val parent: GameObject?
-        get() = scene.getParentId(id)?.let { scene.gameObjects[it] }
+        get() = scene.getParentId(id)?.let(scene::getGameObject)
 
     val children: List<GameObject>
-        get() = scene.getChildrenIds(id).mapNotNull { scene.gameObjects[it] }
+        get() = scene.getChildrenIds(id).map(scene::getGameObject)
 
     private val _modules: MutableMap<KClass<out Module>, Module> = hashMapOf(
         TransformModule::class to transform

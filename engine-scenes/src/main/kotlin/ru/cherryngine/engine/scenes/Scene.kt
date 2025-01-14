@@ -16,7 +16,7 @@ class Scene(
 ) {
     val id: UUID = UUID.randomUUID()
 
-    val gameObjects: MutableMap<UUID, GameObject> = HashMap()
+    private val gameObjects: MutableMap<UUID, GameObject> = HashMap()
     private val parentGraph: Graph<UUID, DefaultEdge> = DirectedAcyclicGraph(DefaultEdge::class.java)
 
     var tick = 0L
@@ -65,6 +65,10 @@ class Scene(
     fun destroyGameObject(id: UUID) {
         gameObjects.remove(id)?.destroy()
         parentGraph.removeVertex(id)
+    }
+
+    fun getGameObject(id: UUID): GameObject {
+        return gameObjects[id] ?: throw NoSuchElementException()
     }
 
     fun <T : Module> getModules(clazz: KClass<T>): List<T> {
