@@ -199,4 +199,7 @@ data class QRot(
         }
     }
 
+    fun asView() = toAxisAngleSequence(AxisSequence.YXZ).let {
+        View((Math.toDegrees(-it.angle1)).toFloat(), Math.toDegrees(it.angle2).toFloat())
+    }
 }

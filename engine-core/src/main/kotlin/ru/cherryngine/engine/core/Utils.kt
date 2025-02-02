@@ -6,6 +6,8 @@ import net.minestom.server.coordinate.Vec
 import net.minestom.server.registry.DynamicRegistry
 import ru.cherryngine.lib.math.Vec3D
 import ru.cherryngine.lib.math.View
+import ru.cherryngine.lib.math.rotation.AxisSequence
+import ru.cherryngine.lib.math.rotation.QRot
 
 fun <T : Any> DynamicRegistry<T>.getId(value: T): Int? = getKey(value)?.let { getId(it) }
 

@@ -7,7 +7,6 @@ import ru.cherryngine.engine.core.world.BlockHolder
 import ru.cherryngine.engine.scenes.GameObject
 import ru.cherryngine.engine.scenes.Module
 import ru.cherryngine.engine.scenes.ModulePrototype
-import ru.cherryngine.engine.scenes.event.Event
 import ru.cherryngine.engine.scenes.modules.client.ClientModule
 import ru.cherryngine.engine.scenes.view.Viewable
 import ru.cherryngine.engine.scenes.view.Viewer
@@ -18,24 +17,25 @@ class BlockHolderModule(
     @Parameter val blockHolder: BlockHolder
 ) : Module, Viewable {
 
-    override fun showFor(viewer: Viewer) {
-        when (viewer) {
+    override fun showFor(viewer: Viewer): Boolean {
+        return when (viewer) {
             is ClientModule -> {
-                viewer.gameObject.transform.global.translation.minestomPos().let { pos ->
-                    ChunkRange.chunksInRange(
-                        pos.chunkX(),
-                        pos.chunkZ(),
-                        viewer.viewDistance
-                    ) { x: Int, z: Int ->
-                        blockHolder.generatePacket(x, z)?.let { viewer.connection.sendPackets(it) }
+                val pos = viewer.gameObject.transform.global.translation.minestomPos()
+                var packetSent = false
+
+                ChunkRange.chunksInRange(pos.chunkX(), pos.chunkZ(), viewer.viewDistance) { x, z ->
+                    blockHolder.generatePacket(x, z)?.let { packet ->
+                        viewer.connection.sendPacket(packet)
+                        packetSent = true
                     }
                 }
+                packetSent
             }
             else -> viewer.show(this)
         }
     }
 
-    override fun hideFor(viewer: Viewer) {
-        viewer.hide(this)
+    override fun hideFor(viewer: Viewer): Boolean {
+        return viewer.hide(this)
     }
 }

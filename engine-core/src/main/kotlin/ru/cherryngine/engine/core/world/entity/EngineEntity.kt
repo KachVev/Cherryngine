@@ -5,7 +5,6 @@ import net.minestom.server.entity.EntityType
 import net.minestom.server.entity.MetadataHolder
 import net.minestom.server.entity.RelativeFlags
 import net.minestom.server.entity.metadata.EntityMeta
-import net.minestom.server.network.packet.server.ServerPacket
 import net.minestom.server.network.packet.server.ServerPacket.Play
 import net.minestom.server.network.packet.server.play.*
 import ru.cherryngine.engine.core.minestomPos

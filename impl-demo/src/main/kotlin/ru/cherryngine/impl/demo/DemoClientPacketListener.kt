@@ -51,8 +51,8 @@ class DemoClientPacketListener(
         val jsonResponse = StatusResponse(
             MinecraftServer.VERSION_NAME,
             MinecraftServer.PROTOCOL_VERSION,
-            100,
-            0,
+            1488,
+            1337,
             "Cherryngine Demo",
             false,
             false
@@ -110,7 +110,10 @@ class DemoClientPacketListener(
             transform.translation = Vec3D(169.5, 73.5, 137.5)
             val clientModule = getOrCreateModule(ClientModule::class, clientConnection)
             getOrCreateModule(FirstPersonController::class, clientModule)
-            getOrCreateModule(DebugRenderer::class)
+            getOrCreateModule(Info::class, clientModule)
+            addChild(demo.masterScene.createGameObject().apply {
+                getOrCreateModule(Shooter::class, 1.0)
+            })
         }
     }
 

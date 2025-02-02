@@ -5,8 +5,9 @@ import org.jgrapht.Graph
 import org.jgrapht.graph.DefaultEdge
 import org.jgrapht.graph.DirectedAcyclicGraph
 import ru.cherryngine.engine.scenes.event.Event
-import ru.cherryngine.engine.scenes.event.impl.SceneTickEvent
+import ru.cherryngine.engine.scenes.event.impl.SceneEvents
 import java.util.*
+import java.util.concurrent.ConcurrentLinkedQueue
 import kotlin.reflect.KClass
 
 class Scene(
@@ -19,39 +20,53 @@ class Scene(
     private val gameObjects: MutableMap<UUID, GameObject> = HashMap()
     private val parentGraph: Graph<UUID, DefaultEdge> = DirectedAcyclicGraph(DefaultEdge::class.java)
 
+    private val eventQueue: AbstractQueue<Event> = ConcurrentLinkedQueue()
+
     var tick = 0L
 
     var tickStartMils = 0L
     var tickEndMils = 0L
     var tickElapsedMils = 0L
 
+    val thread = Thread {
+        while (isAlive) {
+
+            tickStartMils = System.currentTimeMillis()
+
+            tick()
+
+            tickEndMils = System.currentTimeMillis()
+            tickElapsedMils = tickEndMils - tickStartMils
+
+            Thread.sleep(1000L / data.tps)
+        }
+    }
+
     private var isAlive = false
 
     fun start() {
+
         isAlive = true
-        Thread {
-            while (isAlive) {
+        fireEvent(SceneEvents.Start)
 
-                tickStartMils = System.currentTimeMillis()
-
-                tick()
-
-                tickEndMils = System.currentTimeMillis()
-                tickElapsedMils = tickEndMils - tickStartMils
-
-                //println("$id | elapsed time = $tickElapsedMils")
-
-                Thread.sleep(1000L / data.tps)
-            }
-        }.start()
+        thread.start()
     }
 
     fun stop() {
         isAlive = false
+        fireEvent(SceneEvents.Stop)
     }
 
     fun tick() {
-        fireEvent(SceneTickEvent(this))
+        eventQueue.forEach(::fireEvent)
+        eventQueue.clear()
+
+        fireEvent(SceneEvents.Tick.Start)
+
+        fireEvent(SceneEvents.Tick.Physic)
+
+        fireEvent(SceneEvents.Tick.End)
+
         tick++
     }
 
@@ -72,14 +87,15 @@ class Scene(
     }
 
     fun <T : Module> getModules(clazz: KClass<T>): List<T> {
-        val result: MutableList<T> = LinkedList()
-        gameObjects.values.filter {
-            result.addAll(it.getModules(clazz))
-        }.toList()
-        return result
+        return gameObjects.values.flatMap { it.getModules(clazz) }
     }
 
     fun fireEvent(event: Event) {
+        if (!isAlive) return
+        if (thread != Thread.currentThread()) {
+            eventQueue.add(event)
+            return
+        }
         val modules = gameObjects.flatMap { it.value.modules }.groupBy { it::class }
         sceneManager.sortedModuleTypes.forEach { moduleType ->
             modules[moduleType]?.forEach { module ->

@@ -16,6 +16,7 @@ import ru.cherryngine.engine.scenes.ModulePrototype
 import ru.cherryngine.engine.scenes.event.Event
 import ru.cherryngine.engine.scenes.event.impl.ClientPacketEvent
 import ru.cherryngine.engine.scenes.modules.BlockHolderModule
+import ru.cherryngine.engine.scenes.view.Viewable
 import ru.cherryngine.engine.scenes.view.Viewer
 import ru.cherryngine.lib.math.Vec3D
 
@@ -69,4 +70,13 @@ class ClientModule(
     data class ClientLoadedEvent(
         val clientModule: ClientModule
     ) : Event
+
+    override fun show(viewable: Viewable): Boolean {
+        return false
+    }
+
+    override fun hide(viewable: Viewable): Boolean {
+        return false
+    }
+
 }

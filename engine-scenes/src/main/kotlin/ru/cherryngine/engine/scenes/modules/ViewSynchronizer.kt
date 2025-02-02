@@ -5,7 +5,7 @@ import io.micronaut.context.annotation.Parameter
 import ru.cherryngine.engine.scenes.GameObject
 import ru.cherryngine.engine.scenes.ModulePrototype
 import ru.cherryngine.engine.scenes.event.Event
-import ru.cherryngine.engine.scenes.event.impl.SceneTickEvent
+import ru.cherryngine.engine.scenes.event.impl.SceneEvents
 import ru.cherryngine.engine.scenes.view.Viewable
 import ru.cherryngine.engine.scenes.view.Viewer
 import java.util.LinkedHashMap
@@ -19,19 +19,15 @@ class ViewSynchronizer(
     private val map: MutableMap<Viewable, MutableList<Viewer>> = LinkedHashMap()
 
     fun synchronize(viewer: Viewer, viewable: Viewable) {
+        val viewersList = map.computeIfAbsent(viewable) { LinkedList<Viewer>() }
+
         if (canBeSeen(viewer, viewable)) {
-            map.computeIfAbsent(viewable) { LinkedList() }.let {
-                if (!it.contains(viewer)) {
-                    viewable.showFor(viewer)
-                    it.add(viewer)
-                }
+            if (!viewersList.contains(viewer) && viewable.showFor(viewer)) {
+                viewersList.add(viewer)
             }
         } else {
-            map[viewable]?.let {
-                if (it.contains(viewer)) {
-                    viewable.hideFor(viewer)
-                    it.remove(viewer)
-                }
+            if (viewersList.contains(viewer) && viewable.hideFor(viewer)) {
+                viewersList.remove(viewer)
             }
         }
     }
@@ -42,7 +38,7 @@ class ViewSynchronizer(
 
     override fun onEvent(event: Event) {
         when (event) {
-            is SceneTickEvent -> {
+            is SceneEvents.Tick.End -> {
                 scene.getModules(Viewable::class).forEach { viewable ->
                     scene.getModules(Viewer::class).forEach { viewer ->
                         synchronize(viewer, viewable)

@@ -56,12 +56,20 @@ class GameObject(
         scene.addChild(id, child)
     }
 
+    fun addChild(child: GameObject) {
+        scene.addChild(id, child.id)
+    }
+
     fun removeAllChildren() {
         scene.removeAllChildren(id)
     }
 
     fun removeChild(child: UUID) {
         scene.removeChild(id, child)
+    }
+
+    fun removeChild(child: GameObject) {
+        scene.removeChild(id, child.id)
     }
 
     fun removeParent() {
