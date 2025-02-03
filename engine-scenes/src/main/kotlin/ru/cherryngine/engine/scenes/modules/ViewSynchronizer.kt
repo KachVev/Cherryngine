@@ -1,11 +1,10 @@
 package ru.cherryngine.engine.scenes.modules
 
-import com.google.gson.internal.LinkedTreeMap
 import io.micronaut.context.annotation.Parameter
 import ru.cherryngine.engine.scenes.GameObject
 import ru.cherryngine.engine.scenes.ModulePrototype
+import ru.cherryngine.engine.scenes.Scene
 import ru.cherryngine.engine.scenes.event.Event
-import ru.cherryngine.engine.scenes.event.impl.SceneEvents
 import ru.cherryngine.engine.scenes.view.Viewable
 import ru.cherryngine.engine.scenes.view.Viewer
 import java.util.LinkedHashMap
@@ -38,7 +37,7 @@ class ViewSynchronizer(
 
     override fun onEvent(event: Event) {
         when (event) {
-            is SceneEvents.Tick.End -> {
+            is Scene.Events.Tick.End -> {
                 scene.getModules(Viewable::class).forEach { viewable ->
                     scene.getModules(Viewer::class).forEach { viewer ->
                         synchronize(viewer, viewable)

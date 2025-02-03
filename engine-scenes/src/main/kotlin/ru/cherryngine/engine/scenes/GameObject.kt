@@ -1,6 +1,7 @@
 package ru.cherryngine.engine.scenes
 
 import io.micronaut.context.ApplicationContext
+import ru.cherryngine.engine.scenes.event.Event
 import ru.cherryngine.engine.scenes.modules.TransformModule
 import java.util.*
 import kotlin.reflect.KClass
@@ -32,8 +33,20 @@ class GameObject(
     @Suppress("UNCHECKED_CAST")
     fun <T : Module> getOrCreateModule(clazz: KClass<T>, vararg args: Any): T {
         return _modules.computeIfAbsent(clazz) {
-            applicationContext.createBean(clazz.java, this, *args).apply(Module::enable)
+            try {
+                createAndEnableModule(clazz, *args)
+            } catch (e: Exception) {
+                throw IllegalArgumentException("Failed to create module of type ${clazz.simpleName}", e)
+            }
         } as T
+    }
+
+    private fun <T : Module> createAndEnableModule(clazz: KClass<T>, vararg args: Any): T {
+        return applicationContext.createBean(clazz.java, this, *args).apply {
+            scene.fireEvent(Module.Events.Enable.Pre(this))
+            enable()
+            scene.fireEvent(Module.Events.Enable.Post(this))
+        }
     }
 
     @Suppress("UNCHECKED_CAST")
@@ -77,8 +90,65 @@ class GameObject(
     }
 
     fun destroy() {
-        _modules.values.forEach(Module::destroy)
+        scene.fireEvent(Events.Destroy.Pre(this))
+
+        _modules.values.forEach {
+
+            scene.fireEvent(Module.Events.Destroy.Pre(it))
+            it.destroy()
+            scene.fireEvent(Module.Events.Destroy.Pre(it))
+
+        }
+
         _modules.clear()
         removeAllChildren()
+
+        scene.fireEvent(Events.Destroy.Post(this))
+    }
+
+    interface Events {
+
+        interface Destroy {
+
+            data class Pre (
+                val gameObject: GameObject
+            ) : Event
+
+            data class Post (
+                val gameObject: GameObject
+            ) : Event
+
+        }
+
+        interface Registration {
+
+            data class Pre (
+                val gameObject: GameObject
+            ) : Event
+
+            data class Post (
+                val gameObject: GameObject
+            ) : Event
+
+        }
+
+        interface Parent {
+
+            interface Change {
+
+                data class Pre (
+                    val gameObject: GameObject,
+                    val parent: GameObject
+                ) : Event
+
+                data class Post (
+                    val gameObject: GameObject,
+                    val parent: GameObject
+                ) : Event
+
+            }
+
+        }
+
     }
 }

@@ -11,8 +11,8 @@ import ru.cherryngine.engine.core.world.entity.EngineEntity
 import ru.cherryngine.engine.scenes.GameObject
 import ru.cherryngine.engine.scenes.Module
 import ru.cherryngine.engine.scenes.ModulePrototype
+import ru.cherryngine.engine.scenes.Scene
 import ru.cherryngine.engine.scenes.event.Event
-import ru.cherryngine.engine.scenes.event.impl.SceneEvents
 import ru.cherryngine.engine.scenes.modules.client.ClientModule
 import ru.cherryngine.engine.scenes.view.Viewable
 import ru.cherryngine.engine.scenes.view.Viewer
@@ -28,11 +28,14 @@ class Projectile(
         }
     }
 
+    var damage = 100L
+
     override fun onEvent(event: Event) {
         when (event) {
-            is SceneEvents.Tick.Physic -> {
+            is Scene.Events.Tick.Physic -> {
                 gameObject.transform.translation += gameObject.transform.rotation.asView().direction() * 1.0
                 entity.updatePositionAndRotation(gameObject.transform.global.translation, gameObject.transform.global.rotation.asView())
+                if (damage-- <= 0) gameObject.destroy()
             }
         }
     }

@@ -56,7 +56,7 @@ class ClientModule(
 
         connection.sendPackets(packets)
 
-        scene.fireEvent(ClientLoadedEvent(this))
+        scene.fireEvent(Events.Loaded(this))
     }
 
     override fun onEvent(event: Event) {
@@ -67,10 +67,6 @@ class ClientModule(
         }
     }
 
-    data class ClientLoadedEvent(
-        val clientModule: ClientModule
-    ) : Event
-
     override fun show(viewable: Viewable): Boolean {
         return false
     }
@@ -79,4 +75,11 @@ class ClientModule(
         return false
     }
 
+    interface Events {
+
+        data class Loaded (
+            val clientModule: ClientModule
+        ) : Event
+
+    }
 }

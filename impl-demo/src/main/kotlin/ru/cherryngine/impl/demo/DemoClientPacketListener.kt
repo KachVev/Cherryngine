@@ -108,12 +108,11 @@ class DemoClientPacketListener(
     ) {
         demo.masterScene.createGameObject().apply {
             transform.translation = Vec3D(169.5, 73.5, 137.5)
-            val clientModule = getOrCreateModule(ClientModule::class, clientConnection)
-            getOrCreateModule(FirstPersonController::class, clientModule)
-            getOrCreateModule(Info::class, clientModule)
-            addChild(demo.masterScene.createGameObject().apply {
-                getOrCreateModule(Shooter::class, 1.0)
-            })
+            getOrCreateModule(ClientModule::class, clientConnection).let { clientModule ->
+                getOrCreateModule(FirstPersonController::class, clientModule)
+                getOrCreateModule(Info::class, clientModule)
+                getOrCreateModule(Shooter::class, clientModule)
+            }
         }
     }
 

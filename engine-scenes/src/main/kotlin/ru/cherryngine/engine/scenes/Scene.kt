@@ -5,7 +5,6 @@ import org.jgrapht.Graph
 import org.jgrapht.graph.DefaultEdge
 import org.jgrapht.graph.DirectedAcyclicGraph
 import ru.cherryngine.engine.scenes.event.Event
-import ru.cherryngine.engine.scenes.event.impl.SceneEvents
 import java.util.*
 import java.util.concurrent.ConcurrentLinkedQueue
 import kotlin.reflect.KClass
@@ -40,6 +39,7 @@ class Scene(
 
             Thread.sleep(1000L / data.tps)
         }
+        fireEvent(Events.Thread.Stop)
     }
 
     private var isAlive = false
@@ -47,33 +47,34 @@ class Scene(
     fun start() {
 
         isAlive = true
-        fireEvent(SceneEvents.Start)
+        fireEvent(Events.Thread.Start)
 
         thread.start()
     }
 
     fun stop() {
         isAlive = false
-        fireEvent(SceneEvents.Stop)
     }
 
     fun tick() {
         eventQueue.forEach(::fireEvent)
         eventQueue.clear()
 
-        fireEvent(SceneEvents.Tick.Start)
+        fireEvent(Events.Tick.Start)
 
-        fireEvent(SceneEvents.Tick.Physic)
+        fireEvent(Events.Tick.Physic)
 
-        fireEvent(SceneEvents.Tick.End)
+        fireEvent(Events.Tick.End)
 
         tick++
     }
 
     fun createGameObject(): GameObject {
         return GameObject(applicationContext, this).apply {
+            fireEvent(GameObject.Events.Registration.Pre(this))
             gameObjects[id] = this
             parentGraph.addVertex(id)
+            fireEvent(GameObject.Events.Registration.Post(this))
         }
     }
 
@@ -133,4 +134,26 @@ class Scene(
     data class Data(
         val tps: Int,
     )
+
+    interface Events {
+
+        interface Thread {
+
+            object Start : Event
+
+            object Stop : Event
+
+        }
+
+        interface Tick {
+
+            object Start : Event
+
+            object End : Event
+
+            object Physic : Event
+
+        }
+
+    }
 }
