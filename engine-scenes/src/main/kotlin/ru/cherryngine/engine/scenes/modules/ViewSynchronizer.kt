@@ -1,7 +1,11 @@
 package ru.cherryngine.engine.scenes.modules
 
 import io.micronaut.context.annotation.Parameter
+import org.jgrapht.Graph
+import org.jgrapht.graph.DefaultEdge
+import org.jgrapht.graph.DirectedAcyclicGraph
 import ru.cherryngine.engine.scenes.GameObject
+import ru.cherryngine.engine.scenes.Module
 import ru.cherryngine.engine.scenes.ModulePrototype
 import ru.cherryngine.engine.scenes.Scene
 import ru.cherryngine.engine.scenes.event.Event
@@ -15,18 +19,23 @@ class ViewSynchronizer(
     @Parameter override val gameObject: GameObject
 ) : Synchronizer {
 
-    private val map: MutableMap<Viewable, MutableList<Viewer>> = LinkedHashMap()
+    private val graph: Graph<Module, DefaultEdge> = DirectedAcyclicGraph(DefaultEdge::class.java)
 
     fun synchronize(viewer: Viewer, viewable: Viewable) {
-        val viewersList = map.computeIfAbsent(viewable) { LinkedList<Viewer>() }
+        if (!graph.containsVertex(viewable)) {
+            graph.addVertex(viewable)
+        }
+        if (!graph.containsVertex(viewer)) {
+            graph.addVertex(viewer)
+        }
 
         if (canBeSeen(viewer, viewable)) {
-            if (!viewersList.contains(viewer) && viewable.showFor(viewer)) {
-                viewersList.add(viewer)
+            if (!graph.containsEdge(viewable, viewer) && viewable.showFor(viewer)) {
+                graph.addEdge(viewable, viewer)
             }
         } else {
-            if (viewersList.contains(viewer) && viewable.hideFor(viewer)) {
-                viewersList.remove(viewer)
+            if (graph.containsEdge(viewable, viewer) && viewable.hideFor(viewer)) {
+                graph.removeEdge(viewable, viewer)
             }
         }
     }
@@ -41,6 +50,26 @@ class ViewSynchronizer(
                 scene.getModules(Viewable::class).forEach { viewable ->
                     scene.getModules(Viewer::class).forEach { viewer ->
                         synchronize(viewer, viewable)
+                    }
+                }
+            }
+            is Module.Events.Destroy.Pre -> {
+                when (val module = event.module) {
+                    is Viewable -> {
+                        if (graph.containsVertex(module)) {
+                            graph.outgoingEdgesOf(module).forEach {
+                                val viewer = graph.getEdgeTarget(it) as Viewer
+                                module.hideFor(viewer)
+                            }
+                        }
+                    }
+                    is Viewer -> {
+                        if (graph.containsVertex(module)) {
+                            graph.incomingEdgesOf(module).forEach {
+                                val viewable = graph.getEdgeSource(it) as Viewable
+                                viewable.hideFor(module)
+                            }
+                        }
                     }
                 }
             }
