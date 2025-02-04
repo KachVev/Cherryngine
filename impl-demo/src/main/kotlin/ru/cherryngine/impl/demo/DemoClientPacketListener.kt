@@ -113,6 +113,7 @@ class DemoClientPacketListener(
                 getOrCreateModule(Info::class, clientModule)
                 getOrCreateModule(Shooter::class, clientModule)
             }
+            getOrCreateModule(PlayerModelRenderer::class)
         }
     }
 

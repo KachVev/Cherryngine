@@ -90,6 +90,10 @@ class GameObject(
     }
 
     fun destroy() {
+        scene.destroyGameObject(id)
+    }
+
+    fun onDestroy() {
         scene.fireEvent(Events.Destroy.Pre(this))
 
         _modules.values.forEach {

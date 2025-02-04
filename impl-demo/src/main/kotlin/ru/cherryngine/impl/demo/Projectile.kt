@@ -25,6 +25,10 @@ class Projectile(
     val entity = EngineEntity(EntityType.ITEM_DISPLAY).apply {
         editEntityMeta {
             it.set(MetadataDef.ItemDisplay.DISPLAYED_ITEM, ItemStack.of(Material.FIRE_CHARGE))
+            it.set(
+                MetadataDef.ItemDisplay.POSITION_ROTATION_INTERPOLATION_DURATION,
+                2
+            )
         }
     }
 

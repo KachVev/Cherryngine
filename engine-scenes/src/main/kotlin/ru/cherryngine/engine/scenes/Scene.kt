@@ -7,6 +7,7 @@ import org.jgrapht.graph.DirectedAcyclicGraph
 import ru.cherryngine.engine.scenes.event.Event
 import java.util.*
 import java.util.concurrent.ConcurrentLinkedQueue
+import kotlin.collections.HashMap
 import kotlin.reflect.KClass
 
 class Scene(
@@ -79,7 +80,7 @@ class Scene(
     }
 
     fun destroyGameObject(id: UUID) {
-        gameObjects.remove(id)?.destroy()
+        gameObjects.remove(id)?.onDestroy()
         parentGraph.removeVertex(id)
     }
 
@@ -99,7 +100,7 @@ class Scene(
         }
         val modules = gameObjects.flatMap { it.value.modules }.groupBy { it::class }
         sceneManager.sortedModuleTypes.forEach { moduleType ->
-            modules[moduleType]?.forEach { module ->
+            modules[moduleType]?.toList()?.forEach { module ->
                 module.onEvent(event)
             }
         }
@@ -119,8 +120,7 @@ class Scene(
     }
 
     fun removeParent(childId: UUID) {
-
-        parentGraph.incomingEdgesOf(childId).forEach(parentGraph::removeEdge)
+        parentGraph.incomingEdgesOf(childId).toList().forEach(parentGraph::removeEdge)
     }
 
     fun removeChild(parentId: UUID, childId: UUID): Boolean {
@@ -128,7 +128,7 @@ class Scene(
     }
 
     fun removeAllChildren(parentId: UUID) {
-        parentGraph.outgoingEdgesOf(parentId).forEach(parentGraph::removeEdge)
+        parentGraph.outgoingEdgesOf(parentId).toList().forEach(parentGraph::removeEdge)
     }
 
     data class Data(

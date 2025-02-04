@@ -15,6 +15,7 @@ import ru.cherryngine.engine.scenes.Module
 import ru.cherryngine.engine.scenes.ModulePrototype
 import ru.cherryngine.engine.scenes.event.Event
 import ru.cherryngine.engine.scenes.event.impl.ClientPacketEvent
+import ru.cherryngine.engine.scenes.event.impl.DisconnectEvent
 import ru.cherryngine.engine.scenes.modules.BlockHolderModule
 import ru.cherryngine.engine.scenes.view.Viewable
 import ru.cherryngine.engine.scenes.view.Viewer
@@ -55,31 +56,27 @@ class ClientModule(
         packets += ChangeGameStatePacket(ChangeGameStatePacket.Reason.LEVEL_CHUNKS_LOAD_START, 0f)
 
         connection.sendPackets(packets)
-
-        scene.fireEvent(Events.Loaded(this))
     }
 
     override fun onEvent(event: Event) {
         when (event) {
-            is ClientPacketEvent -> {
-                val packet = event.packet
+            is DisconnectEvent -> {
+                if (event.clientConnection != this.connection) return
+                onDisconnect()
             }
         }
     }
 
+    fun onDisconnect() {
+        gameObject.destroy()
+    }
+
     override fun show(viewable: Viewable): Boolean {
-        return false
+        return true
     }
 
     override fun hide(viewable: Viewable): Boolean {
-        return false
+        return true
     }
 
-    interface Events {
-
-        data class Loaded (
-            val clientModule: ClientModule
-        ) : Event
-
-    }
 }

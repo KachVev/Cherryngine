@@ -1,12 +1,7 @@
 package ru.cherryngine.impl.demo
 
 import io.micronaut.context.annotation.Parameter
-import net.kyori.adventure.text.Component
 import net.minestom.server.network.packet.client.play.ClientAnimationPacket
-import net.minestom.server.network.packet.server.play.ExplosionPacket
-import net.minestom.server.network.packet.server.play.HitAnimationPacket
-import net.minestom.server.network.packet.server.play.PlayerChatMessagePacket
-import net.minestom.server.network.packet.server.play.SystemChatPacket
 import ru.cherryngine.engine.core.server.ClientConnection
 import ru.cherryngine.engine.scenes.GameObject
 import ru.cherryngine.engine.scenes.Module
