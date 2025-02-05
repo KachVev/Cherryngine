@@ -64,6 +64,7 @@ class EngineEntity(
         if (newPosition != null && position != newPosition) {
             oldPosition = position
             position = newPosition
+            if ((oldPosition - position).length() > 8) oldPosition = position
             positionChanged = true
         }
 
@@ -116,11 +117,12 @@ class EngineEntity(
     val positionPacket: Play
         get() {
             val diff = position - oldPosition
-            return if ((diff).length() > 8) {
-                teleportPacket
-            } else {
-                EntityPositionPacket.getPacket(entityId, minestomPos, oldPosition.minestomPos(rotation), onGround)
-            }
+//            return if ((diff).length() > 8) {
+//                EntityPositionSyncPacket(entityId, minestomPos, MinestomVec.ZERO, rotation.yaw, rotation.pitch, onGround)
+//            } else {
+//                EntityPositionPacket.getPacket(entityId, minestomPos, oldPosition.minestomPos(rotation), onGround)
+//            }
+            return teleportPacket
         }
 
     val rotationPacket: Play
@@ -133,11 +135,12 @@ class EngineEntity(
     val positionAndRotationPacket: Play
         get() {
             val diff = position - oldPosition
-            return if ((diff).length() > 8) {
-                teleportPacket
-            } else {
-                EntityPositionAndRotationPacket.getPacket(entityId, minestomPos, oldPosition.minestomPos(rotation), onGround)
-            }
+//           return if ((diff).length() > 8) {
+//                EntityPositionSyncPacket(entityId, minestomPos, MinestomVec.ZERO, rotation.yaw, rotation.pitch, onGround)
+//            } else {
+//                EntityPositionAndRotationPacket.getPacket(entityId, minestomPos, oldPosition.minestomPos(rotation), onGround)
+//            }
+            return teleportPacket
         }
     fun show(viewer: ClientConnection) {
         this.viewers.add(viewer)
