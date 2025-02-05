@@ -22,7 +22,11 @@ class Info(
                 val tps = (1000 / scene.tickElapsedMils.toDouble()).coerceAtMost(20.0)
                 val mspt = scene.tickElapsedMils
                 val tpsFormated = String.format("%.1f", tps)
-                clientModule.connection.sendPacket(SystemChatPacket(Component.text("$tpsFormated tps | $mspt mspt"), true))
+                var resultString = "$tpsFormated tps | $mspt mspt"
+                gameObject.getModule(Health::class)?.let {
+                    resultString += " | ${it.health.toInt()}/${it.maxHealth.toInt()} hp"
+                }
+                clientModule.connection.sendPacket(SystemChatPacket(Component.text(resultString), true))
             }
         }
     }

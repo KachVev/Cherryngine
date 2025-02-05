@@ -80,6 +80,12 @@ data class Cuboid(
         return moreThatMin && lessThatMax
     }
 
+    fun isCollide(cuboid: Cuboid): Boolean {
+        return !(max.x < cuboid.min.x || cuboid.max.x < min.x ||
+                max.y < cuboid.min.y || cuboid.max.y < min.y ||
+                max.z < cuboid.min.z || cuboid.max.z < min.z)
+    }
+
     @Suppress("DuplicatedCode")
     fun expand(
         negativeX: Double,

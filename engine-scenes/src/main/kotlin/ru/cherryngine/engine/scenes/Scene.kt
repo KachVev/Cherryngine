@@ -63,7 +63,7 @@ class Scene(
 
         fireEvent(Events.Tick.Start)
 
-        fireEvent(Events.Tick.Physic)
+        fireEvent(Events.Tick.Physics)
 
         fireEvent(Events.Tick.End)
 
@@ -151,7 +151,7 @@ class Scene(
 
             object End : Event
 
-            object Physic : Event
+            object Physics : Event
 
         }
 

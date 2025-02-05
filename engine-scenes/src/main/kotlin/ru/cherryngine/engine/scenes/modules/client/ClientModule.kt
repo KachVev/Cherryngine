@@ -1,12 +1,10 @@
 package ru.cherryngine.engine.scenes.modules.client
 
 import io.micronaut.context.annotation.Parameter
-import io.micronaut.context.annotation.Prototype
 import net.minestom.server.coordinate.Vec
 import net.minestom.server.entity.GameMode
 import net.minestom.server.entity.RelativeFlags
 import net.minestom.server.network.packet.server.ServerPacket
-import net.minestom.server.network.packet.server.common.DisconnectPacket
 import net.minestom.server.network.packet.server.play.*
 import ru.cherryngine.engine.core.minestomPos
 import ru.cherryngine.engine.core.server.ClientConnection
@@ -14,9 +12,7 @@ import ru.cherryngine.engine.scenes.GameObject
 import ru.cherryngine.engine.scenes.Module
 import ru.cherryngine.engine.scenes.ModulePrototype
 import ru.cherryngine.engine.scenes.event.Event
-import ru.cherryngine.engine.scenes.event.impl.ClientPacketEvent
 import ru.cherryngine.engine.scenes.event.impl.DisconnectEvent
-import ru.cherryngine.engine.scenes.modules.BlockHolderModule
 import ru.cherryngine.engine.scenes.view.Viewable
 import ru.cherryngine.engine.scenes.view.Viewer
 import ru.cherryngine.lib.math.Vec3D
@@ -56,6 +52,20 @@ class ClientModule(
         packets += ChangeGameStatePacket(ChangeGameStatePacket.Reason.LEVEL_CHUNKS_LOAD_START, 0f)
 
         connection.sendPackets(packets)
+    }
+
+    fun teleport(position: Vec3D) {
+        gameObject.transform.translation = position
+        connection.sendPacket(
+            PlayerPositionAndLookPacket(
+                -1,
+                position.minestomPos(),
+                Vec.ZERO,
+                0f,
+                0f,
+                0
+            )
+        )
     }
 
     override fun onEvent(event: Event) {

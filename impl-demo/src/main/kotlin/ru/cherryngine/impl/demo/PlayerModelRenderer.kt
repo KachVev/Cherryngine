@@ -5,7 +5,6 @@ import net.minestom.server.entity.EntityType
 import net.minestom.server.entity.MetadataDef
 import net.minestom.server.item.ItemStack
 import net.minestom.server.item.Material
-import ru.cherryngine.engine.core.asVec3D
 import ru.cherryngine.engine.core.minestomVec
 import ru.cherryngine.engine.core.world.entity.EngineEntity
 import ru.cherryngine.engine.scenes.GameObject
@@ -36,7 +35,7 @@ class PlayerModelRenderer(
 
     override fun onEvent(event: Event) {
         when (event) {
-            is Scene.Events.Tick.Physic -> {
+            is Scene.Events.Tick.Physics -> {
                 onUpdate()
             }
         }
@@ -44,7 +43,7 @@ class PlayerModelRenderer(
 
     fun onUpdate() {
         gameObject.transform.global.apply {
-            val bodyScale = scale.times(.7, 1.8 * .75, .7)
+            val bodyScale = scale.times(1.0, .75, 1.0)
             body.updatePositionAndRotation(translation + bodyScale.times(.0, .5, .0))
             body.editEntityMeta {
                 it.set(
@@ -53,7 +52,7 @@ class PlayerModelRenderer(
                 )
             }
 
-            val headScale = (scale * 1.0)
+            val headScale = Vec3D(1.0, 1.0, 1.0)
             head.updatePositionAndRotation(translation + bodyScale.times(.0, 1.0, .0) + headScale.times(.0, .5, .0) - Vec3D(0.0, .1, .0))
             head.editEntityMeta {
                 it.set(

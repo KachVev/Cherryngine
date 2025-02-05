@@ -22,6 +22,8 @@ import ru.cherryngine.engine.core.server.ClientConnection
 import ru.cherryngine.engine.core.server.ClientPacketListener
 import ru.cherryngine.engine.scenes.modules.client.ClientModule
 import ru.cherryngine.engine.scenes.modules.client.FirstPersonController
+import ru.cherryngine.engine.scenes.modules.physics.collider.CuboidCollider
+import ru.cherryngine.lib.math.Cuboid
 import ru.cherryngine.lib.math.Vec3D
 
 @Singleton
@@ -108,12 +110,15 @@ class DemoClientPacketListener(
     ) {
         demo.masterScene.createGameObject().apply {
             transform.translation = Vec3D(169.5, 73.5, 137.5)
+            transform.scale = Vec3D(.7, 1.8, .7)
             getOrCreateModule(ClientModule::class, clientConnection).let { clientModule ->
                 getOrCreateModule(FirstPersonController::class, clientModule)
                 getOrCreateModule(Info::class, clientModule)
                 getOrCreateModule(Shooter::class, clientModule)
             }
             getOrCreateModule(PlayerModelRenderer::class)
+            getOrCreateModule(Health::class, 100.0)
+            getOrCreateModule(CuboidCollider::class, Cuboid.fromTwoPoints(transform.global.scale * Vec3D(-.5, 0.0, -.5), transform.global.scale * Vec3D(.5, 1.0, .5)))
         }
     }
 

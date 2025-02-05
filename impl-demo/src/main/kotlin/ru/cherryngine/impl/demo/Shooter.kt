@@ -9,6 +9,8 @@ import ru.cherryngine.engine.scenes.ModulePrototype
 import ru.cherryngine.engine.scenes.event.Event
 import ru.cherryngine.engine.scenes.event.impl.ClientPacketEvent
 import ru.cherryngine.engine.scenes.modules.client.ClientModule
+import ru.cherryngine.engine.scenes.modules.physics.collider.CuboidCollider
+import ru.cherryngine.lib.math.Cuboid
 import ru.cherryngine.lib.math.Vec3D
 
 @ModulePrototype
@@ -32,9 +34,13 @@ class Shooter(
     fun shoot(clientConnection: ClientConnection) {
         if (clientModule.connection != clientConnection) return
         scene.createGameObject().let {
-            it.transform.translation = gameObject.transform.global.translation + Vec3D(0.0, 1.8, 0.0)
+            it.transform.translation = gameObject.transform.global.translation + gameObject.transform.global.scale * Vec3D(0.0, 0.85, 0.0)
             it.transform.rotation = gameObject.transform.global.rotation
-            it.getOrCreateModule(Projectile::class)
+            it.transform.scale = Vec3D.ONE * .5
+            it.getOrCreateModule(Projectile::class, this)
+            it.getOrCreateModule(CuboidCollider::class,
+                Cuboid.fromTwoPoints(it.transform.global.scale * Vec3D(-.5, -.5, -.5), it.transform.global.scale * Vec3D(.5, .5, .5))
+            )
         }
     }
 }
