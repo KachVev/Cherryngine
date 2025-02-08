@@ -5,6 +5,8 @@ import net.minestom.server.coordinate.Vec
 import ru.cherryngine.engine.scenes.GameObject
 import ru.cherryngine.engine.scenes.Module
 import ru.cherryngine.engine.scenes.ModulePrototype
+import ru.cherryngine.engine.scenes.view.Viewable
+import ru.cherryngine.engine.scenes.view.Viewer
 import ru.cherryngine.lib.math.Cuboid
 import ru.cherryngine.lib.math.Vec3D
 
@@ -27,6 +29,5 @@ class CuboidCollider(
             else -> other.isCollide(this)
         }
     }
-
 
 }

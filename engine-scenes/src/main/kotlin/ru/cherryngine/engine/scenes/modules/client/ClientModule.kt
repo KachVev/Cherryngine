@@ -16,6 +16,7 @@ import ru.cherryngine.engine.scenes.event.impl.DisconnectEvent
 import ru.cherryngine.engine.scenes.view.Viewable
 import ru.cherryngine.engine.scenes.view.Viewer
 import ru.cherryngine.lib.math.Vec3D
+import ru.cherryngine.lib.math.View
 
 @ModulePrototype
 class ClientModule(
@@ -52,20 +53,6 @@ class ClientModule(
         packets += ChangeGameStatePacket(ChangeGameStatePacket.Reason.LEVEL_CHUNKS_LOAD_START, 0f)
 
         connection.sendPackets(packets)
-    }
-
-    fun teleport(position: Vec3D) {
-        gameObject.transform.translation = position
-        connection.sendPacket(
-            PlayerPositionAndLookPacket(
-                -1,
-                position.minestomPos(),
-                Vec.ZERO,
-                0f,
-                0f,
-                0
-            )
-        )
     }
 
     override fun onEvent(event: Event) {

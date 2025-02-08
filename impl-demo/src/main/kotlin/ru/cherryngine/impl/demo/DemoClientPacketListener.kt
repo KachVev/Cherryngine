@@ -20,8 +20,7 @@ import net.minestom.server.registry.Registries
 import org.intellij.lang.annotations.Language
 import ru.cherryngine.engine.core.server.ClientConnection
 import ru.cherryngine.engine.core.server.ClientPacketListener
-import ru.cherryngine.engine.scenes.modules.client.ClientModule
-import ru.cherryngine.engine.scenes.modules.client.FirstPersonController
+import ru.cherryngine.engine.scenes.modules.client.*
 import ru.cherryngine.engine.scenes.modules.physics.collider.CuboidCollider
 import ru.cherryngine.lib.math.Cuboid
 import ru.cherryngine.lib.math.Vec3D
@@ -108,18 +107,65 @@ class DemoClientPacketListener(
         clientConnection: ClientConnection,
         packet: ClientFinishConfigurationPacket,
     ) {
-        demo.masterScene.createGameObject().apply {
+
+
+        val player = demo.masterScene.createGameObject().apply {
+
             transform.translation = Vec3D(169.5, 73.5, 137.5)
-            transform.scale = Vec3D(.7, 1.8, .7)
-            getOrCreateModule(ClientModule::class, clientConnection).let { clientModule ->
-                getOrCreateModule(FirstPersonController::class, clientModule)
-                getOrCreateModule(Info::class, clientModule)
-                getOrCreateModule(Shooter::class, clientModule)
+            transform.scale = Vec3D(0.7, 1.8, 0.7)
+
+            val camera = demo.masterScene.createGameObject()
+
+            camera.transform.translation = Vec3D(169.5, 73.5, 137.5)
+
+            //val clientModule = getOrCreateModule(ClientModule::class, clientConnection)
+            val clientModule = camera.getOrCreateModule(ClientModule::class, clientConnection)
+            val cameraModule = camera.getOrCreateModule(FocusCamera::class, clientModule, this)
+
+            with(clientModule) {
+                getOrCreateModule(ThirdPersonController::class, this, cameraModule)
+                //getOrCreateModule(FirstPersonController::class, this)
+                getOrCreateModule(Info::class, this)
+                getOrCreateModule(Shooter::class, this)
+                getOrCreateModule(Health::class, 100.0, this)
             }
+
             getOrCreateModule(PlayerModelRenderer::class)
-            getOrCreateModule(Health::class, 100.0)
-            getOrCreateModule(CuboidCollider::class, Cuboid.fromTwoPoints(transform.global.scale * Vec3D(-.5, 0.0, -.5), transform.global.scale * Vec3D(.5, 1.0, .5)))
+
+            getOrCreateModule(
+                CuboidCollider::class,
+                Cuboid.fromTwoPoints(
+                    transform.global.scale * Vec3D(-0.5, 0.0, -0.5),
+                    transform.global.scale * Vec3D(0.5, 1.0, 0.5)
+                )
+            )
         }
+
+
+//        demo.masterScene.createGameObject().apply {
+//
+//            transform.translation = Vec3D(169.5, 73.5, 137.5)
+//            transform.scale = Vec3D(0.7, 1.8, 0.7)
+//
+//            val clientModule = getOrCreateModule(ClientModule::class, clientConnection)
+//
+//            with(clientModule) {
+//                getOrCreateModule(FirstPersonController::class, this)
+//                getOrCreateModule(Info::class, this)
+//                getOrCreateModule(Shooter::class, this)
+//            }
+//
+//            getOrCreateModule(PlayerModelRenderer::class)
+//            getOrCreateModule(Health::class, 100.0)
+//
+//            getOrCreateModule(
+//                CuboidCollider::class,
+//                Cuboid.fromTwoPoints(
+//                    transform.global.scale * Vec3D(-0.5, 0.0, -0.5),
+//                    transform.global.scale * Vec3D(0.5, 1.0, 0.5)
+//                )
+//            )
+//        }
     }
 
     override fun onPacketReceived(

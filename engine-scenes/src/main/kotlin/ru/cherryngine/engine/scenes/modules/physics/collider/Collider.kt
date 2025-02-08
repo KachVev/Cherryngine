@@ -3,6 +3,8 @@ package ru.cherryngine.engine.scenes.modules.physics.collider
 import ru.cherryngine.engine.scenes.GameObject
 import ru.cherryngine.engine.scenes.Module
 import ru.cherryngine.engine.scenes.event.Event
+import ru.cherryngine.engine.scenes.view.Viewable
+import ru.cherryngine.engine.scenes.view.Viewer
 
 interface Collider : Module {
 

@@ -6,11 +6,13 @@ import ru.cherryngine.engine.scenes.Module
 import ru.cherryngine.engine.scenes.ModulePrototype
 import ru.cherryngine.engine.scenes.modules.client.ClientModule
 import ru.cherryngine.lib.math.Vec3D
+import ru.cherryngine.lib.math.View
 
 @ModulePrototype
 class Health(
     @Parameter override val gameObject: GameObject,
-    @Parameter val maxHealth: Double
+    @Parameter val maxHealth: Double,
+    @Parameter val clientModule: ClientModule
 ) : Module{
 
     var health = maxHealth
@@ -21,9 +23,11 @@ class Health(
     }
 
     fun kill() {
-        gameObject.getModule(ClientModule::class)?.let {
-            it.teleport(Vec3D(169.5, 73.5, 137.5))
+        clientModule.let {
+            gameObject.transform.translation = Vec3D(169.5, 73.5, 137.5)
+            gameObject.transform.rotation = View.ZERO.getRotation()
             health = maxHealth
         }
     }
+
 }

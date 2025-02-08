@@ -21,7 +21,7 @@ import java.util.zip.DataFormatException
 import javax.crypto.Cipher
 import kotlin.Throws
 
-class ClientConnection(
+class ClientConnection (
     val channel: SocketChannel,
     registries: Registries,
     val compressionThreshold: Int,

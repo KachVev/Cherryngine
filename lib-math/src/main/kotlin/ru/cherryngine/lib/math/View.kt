@@ -27,6 +27,10 @@ data class View(
         return View(yaw * value, pitch * value)
     }
 
+    operator fun times(value: View): View {
+        return View(yaw * value.yaw, pitch * value.pitch)
+    }
+
     operator fun div(value: Float): View {
         return View(yaw / value, pitch / value)
     }
