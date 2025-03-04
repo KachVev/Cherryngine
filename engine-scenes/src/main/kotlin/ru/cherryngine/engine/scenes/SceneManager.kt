@@ -11,7 +11,7 @@ import org.jgrapht.traverse.TopologicalOrderIterator
 import ru.cherryngine.engine.scenes.event.Event
 import java.util.*
 import kotlin.reflect.KClass
-import kotlin.reflect.full.findAnnotation
+import kotlin.reflect.full.*
 
 @Singleton
 class SceneManager(
