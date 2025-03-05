@@ -20,4 +20,6 @@ dependencies {
     api(libs.kyori.adventure.text.minimessage)
 
     api(libs.typetools)
+
+    api(libs.minestom)
 }

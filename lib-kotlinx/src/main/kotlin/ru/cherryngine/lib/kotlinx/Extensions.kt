@@ -10,7 +10,6 @@ fun Iterable<KSerializer<*>>.module() = SerializersModule {
     for (processor in this@module) {
         val targetClass = processor::class.firstGenericType
         @Suppress("UNCHECKED_CAST")
-        println("Registering serializer for $targetClass: $processor")
         contextual(targetClass as KClass<Any>, processor as KSerializer<Any>)
     }
 }
