@@ -5,11 +5,11 @@ import net.minestom.server.entity.EntityType
 import net.minestom.server.entity.MetadataDef
 import net.minestom.server.item.ItemStack
 import net.minestom.server.item.Material
-import ru.cherryngine.engine.core.minestomVec
-import ru.cherryngine.engine.core.world.entity.EngineEntity
+import ru.cherryngine.engine.core.entity.EngineEntity
+import ru.cherryngine.engine.core.ext.minestomVec
 import ru.cherryngine.engine.scenes.GameObject
-import ru.cherryngine.engine.scenes.api.ModulePrototype
 import ru.cherryngine.engine.scenes.Scene
+import ru.cherryngine.engine.scenes.api.ModulePrototype
 import ru.cherryngine.engine.scenes.event.Event
 import ru.cherryngine.engine.scenes.models.Models
 import ru.cherryngine.engine.scenes.models.builder.free

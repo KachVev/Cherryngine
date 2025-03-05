@@ -5,8 +5,8 @@ import net.minestom.server.entity.EntityType
 import net.minestom.server.entity.MetadataDef
 import net.minestom.server.item.ItemStack
 import net.minestom.server.item.Material
-import ru.cherryngine.engine.core.minestomPos
-import ru.cherryngine.engine.core.world.entity.EngineEntity
+import ru.cherryngine.engine.core.entity.EngineEntity
+import ru.cherryngine.engine.core.ext.minestomPos
 import ru.cherryngine.engine.scenes.GameObject
 import ru.cherryngine.engine.scenes.Scene
 import ru.cherryngine.engine.scenes.api.ModulePrototype
