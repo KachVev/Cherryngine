@@ -8,7 +8,7 @@ import net.minestom.server.item.Material
 import ru.cherryngine.engine.core.minestomVec
 import ru.cherryngine.engine.core.world.entity.EngineEntity
 import ru.cherryngine.engine.scenes.GameObject
-import ru.cherryngine.engine.scenes.ModulePrototype
+import ru.cherryngine.engine.scenes.api.ModulePrototype
 import ru.cherryngine.engine.scenes.Scene
 import ru.cherryngine.engine.scenes.event.Event
 import ru.cherryngine.engine.scenes.models.Models
